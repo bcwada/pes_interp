@@ -7,11 +7,7 @@ from pathlib import Path
 
 import tools.tcReader as tcReader
 import tools.xyz as xyz
-from tools.dynamics.grads import Sympy_Grad
-from tools.dynamics.grads import Hard_Code_Grad
-
-# based of Michael Colins and Keiran's papers
-# https://aip.scitation.org/doi/pdf/10.1063/1.476259
+from grads import Sympy_Grad
 
 @dataclass
 class point_generator:
