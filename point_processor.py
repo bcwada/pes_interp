@@ -25,7 +25,7 @@ class point_generator:
     @cached_property
     def z(self):
         """
-        returns the inverse interatomic bond distances 
+        returns the inverse interatomic bond distances
 
             Returns:
                 nC2 numpy array where n is the number of atoms
@@ -55,7 +55,7 @@ class point_generator:
     @cached_property
     def u(self):
         """
-        returns the transformation matrix from inverse interatomic distances to 3n-6 internal coordinates 
+        returns the transformation matrix from inverse interatomic distances to 3n-6 internal coordinates
 
             Returns:
                 nC2 x 3n-6  tensor (numpy array) where n is the number of atoms
@@ -164,11 +164,11 @@ class point_generator:
 
 if __name__ == "__main__":
     print("testing")
-    path = Path("/home/bcwada/projects/grow/dynamics_sandbox/BuH.xyz")
+    path = Path("./test/point_processor/BuH.xyz")
     g = xyz.Geometry.from_file(path)
     calc = point_generator(g, 0, np.zeros(42), np.zeros((42,42)), Sympy_Grad.initialize(g.num_atoms))
 
-    calc.write_point("test.out")
+    calc.write_point("./test/point_processor/test.out")
 
 #    print("shapes")
 #    z = calc.z()
@@ -187,5 +187,5 @@ if __name__ == "__main__":
 #    print(f"dvdzeta {dvdzeta.shape}")
 #    dv2dzeta2 = calc.dV2_dzeta2()
 #    print(f"dv2dzeta2 {dv2dzeta2.shape}")
-    
+
 #    calc.get_pes_properties()
