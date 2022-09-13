@@ -3,7 +3,6 @@ Provides classes that supply functions to calculate inverse interatomic distance
 
 Classes:
     Sympy_Grad
-    Hard_Code_Grad
 """
 from functools import cache, cached_property
 import numpy as np

@@ -3,7 +3,6 @@ import numpy as np
 import os.path
 from dataclasses import dataclass
 
-
 @dataclass
 class Geometry:
     numAtoms: int
