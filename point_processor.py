@@ -3,7 +3,7 @@ import numpy as np
 from dataclasses import dataclass
 from pathlib import Path
 
-import xyz
+import lib.xyz as xyz
 from grads import Sympy_Grad
 
 @dataclass
