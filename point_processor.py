@@ -3,10 +3,8 @@ import numpy as np
 from dataclasses import dataclass
 from pathlib import Path
 
-import tools.tcReader as tcReader
 import tools.xyz as xyz
 from grads import Sympy_Grad
-from grads import Hard_Code_Grad_14
 
 @dataclass
 class point_generator:
@@ -63,18 +61,18 @@ class point_generator:
                 nC2 x 3n-6  tensor (numpy array) where n is the number of atoms
         """
         # TODO: verify that we don't need derivatives of U
-        b = self.b()
+        b = self.b
         u, s, v = np.linalg.svd(b)
         u_tilde = u[:, 0:3 * self.geom.num_atoms - 6]
         return u_tilde
 
     @cached_property
     def dzeta_dx(self):
-        return np.tensordot(self.u(), self.b(), axes=([0],[0]))
+        return np.tensordot(self.u, self.b, axes=([0],[0]))
 
     @cached_property
     def dzeta2_dx2(self):
-        return np.tensordot(self.u(), self.b2(), axes=([0],[0]))
+        return np.tensordot(self.u, self.b2, axes=([0],[0]))
 
     @cached_property
     def dV_dzeta(self):
@@ -85,7 +83,7 @@ class point_generator:
                 3n-6 array of the gradient
         """
         # TODO: Should solve the overconstrained optimization rather than truncate like this
-        a = self.dzeta_dx()[:,:-6]
+        a = self.dzeta_dx[:,:-6]
         return np.linalg.solve(a.T, self.grad[:-6])
 
     @cached_property
@@ -96,10 +94,10 @@ class point_generator:
             Returns:
                 3n-6 x 3n-6 array of the hessian
         """
-        dvdzeta = self.dV_dzeta()
-        other_term = np.tensordot(self.dzeta2_dx2(), dvdzeta, axes=([0],[0]))
+        dvdzeta = self.dV_dzeta
+        other_term = np.tensordot(self.dzeta2_dx2, dvdzeta, axes=([0],[0]))
         mod_hess = self.hess - other_term
-        dzetadx = self.dzeta_dx()
+        dzetadx = self.dzeta_dx
         dv2dzeta2 = np.linalg.pinv(dzetadx.T) @ mod_hess @ np.linalg.pinv(dzetadx)
         return dv2dzeta2
 
@@ -110,15 +108,15 @@ class point_generator:
 
     @cached_property
     def l(self):
-        return self._diag_hess()[1]
+        return self._diag_hess[1]
 
     @cached_property
     def frequencies(self):
-        return self._diag_hess()[0]
+        return self._diag_hess[0]
 
     @cached_property
     def m(self):
-        m = self.l.T @ self.u().T
+        m = self.l.T @ self.u.T
         return m
 
     @cached_property
@@ -130,11 +128,11 @@ class point_generator:
     #    pass
 
     def get_pes_properties(self):
-        z = self.z()
-        dvdz = self.dV_dzeta()
-        dv2dz2 = self.dV2_dzeta2()
+        z = self.z
+        dvdz = self.dV_dzeta
+        dv2dz2 = self.dV2_dzeta2
         diag_dv2dz2, l = np.linalg.eigh(dv2dz2)
-        m = l.T @ self.u().T
+        m = l.T @ self.u.T
         # z is the inverse atomic dist coords,
         # the second term should be dV/deta from eq. 4.6 of the paper
         # the diagonals of the hessian are stored, and the matrix to get from z to eta
