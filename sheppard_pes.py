@@ -1,3 +1,7 @@
+"""
+Just a scaffold at this point
+"""
+
 import numpy as np
 from dataclasses import dataclass
 
