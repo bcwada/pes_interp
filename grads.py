@@ -65,7 +65,7 @@ class Sympy_Grad:
             self.funcs["calc_z"] = func
             return func
 
-    def calc_b(self):
+    def calc_b_old(self):
         """
         returns a function that will calculate B given the 1D coords (atom1x,atom1y,atom1z,atom2x...)
         eq. 3.3
@@ -78,7 +78,20 @@ class Sympy_Grad:
             self.funcs["calc_b"] = func
             return func
 
-    def calc_b2(self):
+    def calc_b(self):
+        """
+        returns a function that will calculate B given the 1D coords (atom1x,atom1y,atom1z,atom2x...)
+        eq. 3.3
+        """
+        if "calc_b_alt" in self.funcs.keys():
+            return self.funcs["calc_b_alt"]
+        else:
+            func = sympy.utilities.lambdify(self.symb, self.b)
+            unpack = lambda x: np.array(func(*x))
+            self.funcs["calc_b_alt"] = unpack
+            return unpack
+
+    def calc_b2_old(self):
         """
         returns a function that will calculate z given the 1D coords (atom1x,atom1y,atom1z,atom2x...)
         eq. 3.4
@@ -92,12 +105,78 @@ class Sympy_Grad:
             self.funcs["calc_b2"] = func
             return func
 
+    def calc_b2(self):
+        """
+        returns a function that will calculate z given the 1D coords (atom1x,atom1y,atom1z,atom2x...)
+        eq. 3.4
+        """
+        if "calc_b2" in self.funcs.keys():
+            return self.funcs["calc_b2"]
+        else:
+            #sympy wants to make this return a list, rather than an np.array
+            func = sympy.utilities.lambdify(self.symb, self.b2)
+            unpack = lambda x: np.array(func(*x))
+            self.funcs["calc_b2"] = unpack
+            return unpack
+
+
 @dataclass
 class Hard_Code_Grad_14:
-    num_atoms: int
+    """
+    provides hard coded gradients for a 14 atom system (butane). This offers a significant performance 
+    boost over the naive sympy version
+    """
+    @classmethod
+    def initialize(cls, natoms):
+        return Hard_Code_Grad_14()
 
     def calc_z(self):
-        pass
+        def func(A):
+            x0   =      A[0]
+            x1   =      A[1]
+            x2   =      A[2]
+            x3   =      A[3]
+            x4   =      A[4]
+            x5   =      A[5]
+            x6   =      A[6]
+            x7   =      A[7]
+            x8   =      A[8]
+            x9   =      A[9]
+            x10  =      A[10]
+            x11  =      A[11]
+            x12  =      A[12]
+            x13  =      A[13]
+            x14  =      A[14]
+            x15  =      A[15]
+            x16  =      A[16]
+            x17  =      A[17]
+            x18  =      A[18]
+            x19  =      A[19]
+            x20  =      A[20]
+            x21  =      A[21]
+            x22  =      A[22]
+            x23  =      A[23]
+            x24  =      A[24]
+            x25  =      A[25]
+            x26  =      A[26]
+            x27  =      A[27]
+            x28  =      A[28]
+            x29  =      A[29]
+            x30  =      A[30]
+            x31  =      A[31]
+            x32  =      A[32]
+            x33  =      A[33]
+            x34  =      A[34]
+            x35  =      A[35]
+            x36  =      A[36]
+            x37  =      A[37]
+            x38  =      A[38]
+            x39  =      A[39]
+            x40  =      A[40]
+            x41  =      A[41]
+
+            return [1/np.sqrt((x0 - x3)**2 + (x1 - x4)**2 + (x2 - x5)**2), 1/np.sqrt((x0 - x6)**2 + (x1 - x7)**2 + (x2 - x8)**2), 1/np.sqrt((x0 - x9)**2 + (x1 - x10)**2 + (-x11 + x2)**2), 1/np.sqrt((x0 - x12)**2 + (x1 - x13)**2 + (-x14 + x2)**2), 1/np.sqrt((x0 - x15)**2 + (x1 - x16)**2 + (-x17 + x2)**2), 1/np.sqrt((x0 - x18)**2 + (x1 - x19)**2 + (x2 - x20)**2), 1/np.sqrt((x0 - x21)**2 + (x1 - x22)**2 + (x2 - x23)**2), 1/np.sqrt((x0 - x24)**2 + (x1 - x25)**2 + (x2 - x26)**2), 1/np.sqrt((x0 - x27)**2 + (x1 - x28)**2 + (x2 - x29)**2), 1/np.sqrt((x0 - x30)**2 + (x1 - x31)**2 + (x2 - x32)**2), 1/np.sqrt((x0 - x33)**2 + (x1 - x34)**2 + (x2 - x35)**2), 1/np.sqrt((x0 - x36)**2 + (x1 - x37)**2 + (x2 - x38)**2), 1/np.sqrt((x0 - x39)**2 + (x1 - x40)**2 + (x2 - x41)**2), 1/np.sqrt((x3 - x6)**2 + (x4 - x7)**2 + (x5 - x8)**2), 1/np.sqrt((-x10 + x4)**2 + (-x11 + x5)**2 + (x3 - x9)**2), 1/np.sqrt((-x12 + x3)**2 + (-x13 + x4)**2 + (-x14 + x5)**2), 1/np.sqrt((-x15 + x3)**2 + (-x16 + x4)**2 + (-x17 + x5)**2), 1/np.sqrt((-x18 + x3)**2 + (-x19 + x4)**2 + (-x20 + x5)**2), 1/np.sqrt((-x21 + x3)**2 + (-x22 + x4)**2 + (-x23 + x5)**2), 1/np.sqrt((-x24 + x3)**2 + (-x25 + x4)**2 + (-x26 + x5)**2), 1/np.sqrt((-x27 + x3)**2 + (-x28 + x4)**2 + (-x29 + x5)**2), 1/np.sqrt((x3 - x30)**2 + (-x31 + x4)**2 + (-x32 + x5)**2), 1/np.sqrt((x3 - x33)**2 + (-x34 + x4)**2 + (-x35 + x5)**2), 1/np.sqrt((x3 - x36)**2 + (-x37 + x4)**2 + (-x38 + x5)**2), 1/np.sqrt((x3 - x39)**2 + (x4 - x40)**2 + (-x41 + x5)**2), 1/np.sqrt((-x10 + x7)**2 + (-x11 + x8)**2 + (x6 - x9)**2), 1/np.sqrt((-x12 + x6)**2 + (-x13 + x7)**2 + (-x14 + x8)**2), 1/np.sqrt((-x15 + x6)**2 + (-x16 + x7)**2 + (-x17 + x8)**2), 1/np.sqrt((-x18 + x6)**2 + (-x19 + x7)**2 + (-x20 + x8)**2), 1/np.sqrt((-x21 + x6)**2 + (-x22 + x7)**2 + (-x23 + x8)**2), 1/np.sqrt((-x24 + x6)**2 + (-x25 + x7)**2 + (-x26 + x8)**2), 1/np.sqrt((-x27 + x6)**2 + (-x28 + x7)**2 + (-x29 + x8)**2), 1/np.sqrt((-x30 + x6)**2 + (-x31 + x7)**2 + (-x32 + x8)**2), 1/np.sqrt((-x33 + x6)**2 + (-x34 + x7)**2 + (-x35 + x8)**2), 1/np.sqrt((-x36 + x6)**2 + (-x37 + x7)**2 + (-x38 + x8)**2), 1/np.sqrt((-x39 + x6)**2 + (-x40 + x7)**2 + (-x41 + x8)**2), 1/np.sqrt((x10 - x13)**2 + (x11 - x14)**2 + (-x12 + x9)**2), 1/np.sqrt((x10 - x16)**2 + (x11 - x17)**2 + (-x15 + x9)**2), 1/np.sqrt((x10 - x19)**2 + (x11 - x20)**2 + (-x18 + x9)**2), 1/np.sqrt((x10 - x22)**2 + (x11 - x23)**2 + (-x21 + x9)**2), 1/np.sqrt((x10 - x25)**2 + (x11 - x26)**2 + (-x24 + x9)**2), 1/np.sqrt((x10 - x28)**2 + (x11 - x29)**2 + (-x27 + x9)**2), 1/np.sqrt((x10 - x31)**2 + (x11 - x32)**2 + (-x30 + x9)**2), 1/np.sqrt((x10 - x34)**2 + (x11 - x35)**2 + (-x33 + x9)**2), 1/np.sqrt((x10 - x37)**2 + (x11 - x38)**2 + (-x36 + x9)**2), 1/np.sqrt((x10 - x40)**2 + (x11 - x41)**2 + (-x39 + x9)**2), 1/np.sqrt((x12 - x15)**2 + (x13 - x16)**2 + (x14 - x17)**2), 1/np.sqrt((x12 - x18)**2 + (x13 - x19)**2 + (x14 - x20)**2), 1/np.sqrt((x12 - x21)**2 + (x13 - x22)**2 + (x14 - x23)**2), 1/np.sqrt((x12 - x24)**2 + (x13 - x25)**2 + (x14 - x26)**2), 1/np.sqrt((x12 - x27)**2 + (x13 - x28)**2 + (x14 - x29)**2), 1/np.sqrt((x12 - x30)**2 + (x13 - x31)**2 + (x14 - x32)**2), 1/np.sqrt((x12 - x33)**2 + (x13 - x34)**2 + (x14 - x35)**2), 1/np.sqrt((x12 - x36)**2 + (x13 - x37)**2 + (x14 - x38)**2), 1/np.sqrt((x12 - x39)**2 + (x13 - x40)**2 + (x14 - x41)**2), 1/np.sqrt((x15 - x18)**2 + (x16 - x19)**2 + (x17 - x20)**2), 1/np.sqrt((x15 - x21)**2 + (x16 - x22)**2 + (x17 - x23)**2), 1/np.sqrt((x15 - x24)**2 + (x16 - x25)**2 + (x17 - x26)**2), 1/np.sqrt((x15 - x27)**2 + (x16 - x28)**2 + (x17 - x29)**2), 1/np.sqrt((x15 - x30)**2 + (x16 - x31)**2 + (x17 - x32)**2), 1/np.sqrt((x15 - x33)**2 + (x16 - x34)**2 + (x17 - x35)**2), 1/np.sqrt((x15 - x36)**2 + (x16 - x37)**2 + (x17 - x38)**2), 1/np.sqrt((x15 - x39)**2 + (x16 - x40)**2 + (x17 - x41)**2), 1/np.sqrt((x18 - x21)**2 + (x19 - x22)**2 + (x20 - x23)**2), 1/np.sqrt((x18 - x24)**2 + (x19 - x25)**2 + (x20 - x26)**2), 1/np.sqrt((x18 - x27)**2 + (x19 - x28)**2 + (x20 - x29)**2), 1/np.sqrt((x18 - x30)**2 + (x19 - x31)**2 + (x20 - x32)**2), 1/np.sqrt((x18 - x33)**2 + (x19 - x34)**2 + (x20 - x35)**2), 1/np.sqrt((x18 - x36)**2 + (x19 - x37)**2 + (x20 - x38)**2), 1/np.sqrt((x18 - x39)**2 + (x19 - x40)**2 + (x20 - x41)**2), 1/np.sqrt((x21 - x24)**2 + (x22 - x25)**2 + (x23 - x26)**2), 1/np.sqrt((x21 - x27)**2 + (x22 - x28)**2 + (x23 - x29)**2), 1/np.sqrt((x21 - x30)**2 + (x22 - x31)**2 + (x23 - x32)**2), 1/np.sqrt((x21 - x33)**2 + (x22 - x34)**2 + (x23 - x35)**2), 1/np.sqrt((x21 - x36)**2 + (x22 - x37)**2 + (x23 - x38)**2), 1/np.sqrt((x21 - x39)**2 + (x22 - x40)**2 + (x23 - x41)**2), 1/np.sqrt((x24 - x27)**2 + (x25 - x28)**2 + (x26 - x29)**2), 1/np.sqrt((x24 - x30)**2 + (x25 - x31)**2 + (x26 - x32)**2), 1/np.sqrt((x24 - x33)**2 + (x25 - x34)**2 + (x26 - x35)**2), 1/np.sqrt((x24 - x36)**2 + (x25 - x37)**2 + (x26 - x38)**2), 1/np.sqrt((x24 - x39)**2 + (x25 - x40)**2 + (x26 - x41)**2), 1/np.sqrt((x27 - x30)**2 + (x28 - x31)**2 + (x29 - x32)**2), 1/np.sqrt((x27 - x33)**2 + (x28 - x34)**2 + (x29 - x35)**2), 1/np.sqrt((x27 - x36)**2 + (x28 - x37)**2 + (x29 - x38)**2), 1/np.sqrt((x27 - x39)**2 + (x28 - x40)**2 + (x29 - x41)**2), 1/np.sqrt((x30 - x33)**2 + (x31 - x34)**2 + (x32 - x35)**2), 1/np.sqrt((x30 - x36)**2 + (x31 - x37)**2 + (x32 - x38)**2), 1/np.sqrt((x30 - x39)**2 + (x31 - x40)**2 + (x32 - x41)**2), 1/np.sqrt((x33 - x36)**2 + (x34 - x37)**2 + (x35 - x38)**2), 1/np.sqrt((x33 - x39)**2 + (x34 - x40)**2 + (x35 - x41)**2), 1/np.sqrt((x36 - x39)**2 + (x37 - x40)**2 + (x38 - x41)**2)]
+        return func
 
     def calc_b(self):
         def func(A):
@@ -157,4 +236,4 @@ class Hard_Code_Grad_14:
         return func
 
     def calc_b2(self):
-        pass
+        raise NotImplementedError
