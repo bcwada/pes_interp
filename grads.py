@@ -36,7 +36,7 @@ class Sympy_Grad:
         return sympy.sqrt(del_x + del_y + del_z)
 
     @cached_property
-    def z(self):
+    def inv_dist(self):
         pairs = combinations(range(self.num_atoms), 2)
         z = []
         for i, j in pairs:
@@ -45,7 +45,7 @@ class Sympy_Grad:
 
     @cached_property
     def b(self):
-        b = sympy.derive_by_array(self.z,self.symb)
+        b = sympy.derive_by_array(self.inv_dist,self.symb)
         return sympy.permutedims(b, (1,0))
 
     @cached_property
@@ -53,16 +53,18 @@ class Sympy_Grad:
         b2 = np.array(sympy.derive_by_array(self.b,self.symb))
         return sympy.permutedims(b2, (1,2,0))
 
-    def calc_z(self):
+    @property
+    def calc_inv_dist(self):
         """
         returns a function that will calculate z given the 1D coords (atom1x,atom1y,atom1z,atom2x...)
         """
         if "calc_z" in self.funcs.keys():
             return self.funcs["calc_z"]
         else:
-            func = sympy.utilities.lambdify(self.symb, self.z)
-            self.funcs["calc_z"] = func
-            return func
+            func = sympy.utilities.lambdify(self.symb, self.inv_dist)
+            unpack = lambda x: np.array(func(*x))
+            self.funcs["calc_z"] = unpack
+            return unpack
 
     def calc_b_old(self):
         """
@@ -77,6 +79,7 @@ class Sympy_Grad:
             self.funcs["calc_b"] = func
             return func
 
+    @property
     def calc_b(self):
         """
         returns a function that will calculate B given the 1D coords (atom1x,atom1y,atom1z,atom2x...)
@@ -104,6 +107,7 @@ class Sympy_Grad:
             self.funcs["calc_b2"] = func
             return func
 
+    @property
     def calc_b2(self):
         """
         returns a function that will calculate z given the 1D coords (atom1x,atom1y,atom1z,atom2x...)

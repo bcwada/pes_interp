@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import lib.xyz as xyz
+import global_vars
 from grads import Sympy_Grad
 
 @dataclass
@@ -14,13 +15,8 @@ class point_generator:
     hess: np.array
     # TODO: inherit from a gradient calculator
     # TODO: optimize by caching intermediate results
-    grad_source: Sympy_Grad
 
-    #def update_point(self, e, geom, grad, hess):
-    #    self.energy = e
-    #    self.geom = geom
-    #    self.grad = grad
-    #    self.hess = hess
+    grad_source = Sympy_Grad.initialize(global_vars.NUM_ATOMS)
 
     @cached_property
     def z(self):
@@ -30,7 +26,7 @@ class point_generator:
             Returns:
                 nC2 numpy array where n is the number of atoms
         """
-        return self.grad_source.calc_z()(*self.geom.coords.reshape(-1))
+        return point_generator.grad_source.calc_inv_dist(self.geom.coords.reshape(-1))
 
     @cached_property
     def b(self):
@@ -40,7 +36,7 @@ class point_generator:
             Returns:
                 nC2 x 3n numpy array where n is the number of atoms
         """
-        return self.grad_source.calc_b()(self.geom.coords.reshape(-1))
+        return point_generator.grad_source.calc_b(self.geom.coords.reshape(-1))
 
     @cached_property
     def b2(self):
@@ -50,7 +46,7 @@ class point_generator:
             Returns:
                 nC2 x 3n x 3n tensor (numpy array) where n is the number of atoms
         """
-        return self.grad_source.calc_b2()(self.geom.coords.reshape(-1))
+        return point_generator.grad_source.calc_b2(self.geom.coords.reshape(-1))
 
     @cached_property
     def u(self):
@@ -123,21 +119,6 @@ class point_generator:
     def dV_deta(self):
         return self.l.T @ self.dV_dzeta
 
-    #@cached_property
-    #def dV2_deta2(self):
-    #    pass
-
-    def get_pes_properties(self):
-        z = self.z
-        dvdz = self.dV_dzeta
-        dv2dz2 = self.dV2_dzeta2
-        diag_dv2dz2, l = np.linalg.eigh(dv2dz2)
-        m = l.T @ self.u.T
-        # z is the inverse atomic dist coords,
-        # the second term should be dV/deta from eq. 4.6 of the paper
-        # the diagonals of the hessian are stored, and the matrix to get from z to eta
-        return z, l.T@dvdz, diag_dv2dz2, m
-
     def write_point(self, dest):
         with open(dest,'w') as f:
             #energey
@@ -163,10 +144,10 @@ class point_generator:
 
 
 if __name__ == "__main__":
-    print("testing")
+    print("testing point processor")
     path = Path("./test/point_processor/BuH.xyz")
     g = xyz.Geometry.from_file(path)
-    calc = point_generator(g, 0, np.zeros(42), np.zeros((42,42)), Sympy_Grad.initialize(g.num_atoms))
+    calc = point_generator(g, 0, np.zeros(42), np.zeros((42,42)))
 
     calc.write_point("./test/point_processor/test.out")
 
