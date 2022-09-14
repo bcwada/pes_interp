@@ -161,13 +161,11 @@ class point_generator:
             f.write("\n")
 
 
-
 if __name__ == "__main__":
     print("testing")
     path = Path("./test/point_processor/BuH.xyz")
     g = xyz.Geometry.from_file(path)
     calc = point_generator(g, 0, np.zeros(42), np.zeros((42,42)), Sympy_Grad.initialize(g.num_atoms))
-
     calc.write_point("./test/point_processor/test.out")
 
 #    print("shapes")

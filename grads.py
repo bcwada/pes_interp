@@ -14,7 +14,7 @@ from dataclasses import dataclass
 @dataclass
 class Sympy_Grad:
     """
-    provides gradients through sympy
+    Derive functions for inverse distances, gradients and hessian from computer algebra.
     """
     num_atoms: int
     symb: sympy.Array
@@ -23,20 +23,29 @@ class Sympy_Grad:
     @classmethod
     def initialize(cls, natoms):
         """
-        initializes the class given the number of atoms
+        Initialize the class for a fixed number of atoms NATOMS.
+
+        This initializes an array of symbols used for sympy's computer
+        algebra.
         """
         symb = sympy.Array(sympy.symbols(f"x:{natoms * 3}"))
         return cls(natoms,symb,{})
 
     @staticmethod
     def dist(symb,i,j):
+        """
+        Generate symbolic distance between two atoms I and J.
+        """
         del_x = sympy.Pow((symb[3*i+0]-symb[3*j+0]),2)
         del_y = sympy.Pow((symb[3*i+1]-symb[3*j+1]),2)
         del_z = sympy.Pow((symb[3*i+2]-symb[3*j+2]),2)
         return sympy.sqrt(del_x + del_y + del_z)
 
     @cached_property
-    def z(self):
+    def inverse_dist(self):
+        """
+        Generate symbolic inverse distances.
+        """
         pairs = combinations(range(self.num_atoms), 2)
         z = []
         for i, j in pairs:
@@ -44,14 +53,20 @@ class Sympy_Grad:
         return sympy.Array(z)
 
     @cached_property
-    def b(self):
-        b = sympy.derive_by_array(self.z,self.symb)
-        return sympy.permutedims(b, (1,0))
+    def inv_jacobian(self):
+        """
+        Generate symbolic Jacobian of inverse distances w.r.t. cartesian coordinates.
+        """
+        J = sympy.derive_by_array(self.inverse_dist,self.symb)
+        return sympy.permutedims(J, (1,0))
 
     @cached_property
-    def b2(self):
-        b2 = np.array(sympy.derive_by_array(self.b,self.symb))
-        return sympy.permutedims(b2, (1,2,0))
+    def inv_hessian(self):
+        """
+        Generate symbolic Hessian of inverse distances w.r.t. cartesian coordinates.
+        """
+        H = np.array(sympy.derive_by_array(self.inv_jacobian,self.symb))
+        return sympy.permutedims(H, (1,2,0))
 
     def calc_z(self):
         """
@@ -60,7 +75,7 @@ class Sympy_Grad:
         if "calc_z" in self.funcs.keys():
             return self.funcs["calc_z"]
         else:
-            func = sympy.utilities.lambdify(self.symb, self.z)
+            func = sympy.utilities.lambdify(self.symb, self.inverse_dist)
             self.funcs["calc_z"] = func
             return func
 
@@ -72,8 +87,8 @@ class Sympy_Grad:
         if "calc_b" in self.funcs.keys():
             return self.funcs["calc_b"]
         else:
-            b = self.b
-            func = lambda x: np.array(sympy.utilities.lambdify(self.symb, self.b)(*x))
+            b = self.inv_jacobian
+            func = lambda x: np.array(sympy.utilities.lambdify(self.symb, self.inv_jacobian)(*x))
             self.funcs["calc_b"] = func
             return func
 
@@ -85,7 +100,7 @@ class Sympy_Grad:
         if "calc_b_alt" in self.funcs.keys():
             return self.funcs["calc_b_alt"]
         else:
-            func = sympy.utilities.lambdify(self.symb, self.b)
+            func = sympy.utilities.lambdify(self.symb, self.inv_jacobian)
             unpack = lambda x: np.array(func(*x))
             self.funcs["calc_b_alt"] = unpack
             return unpack
@@ -98,9 +113,9 @@ class Sympy_Grad:
         if "calc_b2" in self.funcs.keys():
             return self.funcs["calc_b2"]
         else:
-            b2 = self.b2
+            b2 = self.inv_hessian
             #sympy wants to make this return a list, rather than an np.array
-            func = lambda x: np.array(sympy.utilities.lambdify(self.symb, self.b2)(*x))
+            func = lambda x: np.array(sympy.utilities.lambdify(self.symb, self.inv_hessian)(*x))
             self.funcs["calc_b2"] = func
             return func
 
@@ -113,7 +128,7 @@ class Sympy_Grad:
             return self.funcs["calc_b2"]
         else:
             #sympy wants to make this return a list, rather than an np.array
-            func = sympy.utilities.lambdify(self.symb, self.b2)
+            func = sympy.utilities.lambdify(self.symb, self.inv_hessian)
             unpack = lambda x: np.array(func(*x))
             self.funcs["calc_b2"] = unpack
             return unpack
