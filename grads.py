@@ -42,7 +42,7 @@ class Sympy_Grad:
         return sympy.sqrt(del_x + del_y + del_z)
 
     @cached_property
-    def inverse_dist(self):
+    def inv_dist(self):
         """
         Generate symbolic inverse distances.
         """
@@ -57,7 +57,7 @@ class Sympy_Grad:
         """
         Generate symbolic Jacobian of inverse distances w.r.t. cartesian coordinates.
         """
-        J = sympy.derive_by_array(self.inverse_dist,self.symb)
+        J = sympy.derive_by_array(self.inv_dist,self.symb)
         return sympy.permutedims(J, (1,0))
 
     @cached_property
@@ -68,16 +68,18 @@ class Sympy_Grad:
         H = np.array(sympy.derive_by_array(self.inv_jacobian,self.symb))
         return sympy.permutedims(H, (1,2,0))
 
-    def calc_z(self):
+    @property
+    def calc_inv_dist(self):
         """
         returns a function that will calculate z given the 1D coords (atom1x,atom1y,atom1z,atom2x...)
         """
         if "calc_z" in self.funcs.keys():
             return self.funcs["calc_z"]
         else:
-            func = sympy.utilities.lambdify(self.symb, self.inverse_dist)
-            self.funcs["calc_z"] = func
-            return func
+            func = sympy.utilities.lambdify(self.symb, self.inv_dist)
+            unpack = lambda x: np.array(func(*x))
+            self.funcs["calc_z"] = unpack
+            return unpack
 
     def calc_b_old(self):
         """
@@ -92,6 +94,7 @@ class Sympy_Grad:
             self.funcs["calc_b"] = func
             return func
 
+    @property
     def calc_b(self):
         """
         returns a function that will calculate B given the 1D coords (atom1x,atom1y,atom1z,atom2x...)
@@ -119,6 +122,7 @@ class Sympy_Grad:
             self.funcs["calc_b2"] = func
             return func
 
+    @property
     def calc_b2(self):
         """
         returns a function that will calculate z given the 1D coords (atom1x,atom1y,atom1z,atom2x...)

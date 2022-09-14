@@ -1,89 +1,101 @@
-"""
-Just a scaffold at this point
-"""
-
+from functools import cached_property
+from pathlib import Path
 import numpy as np
 from dataclasses import dataclass
 
-import tools.tcReader as tcReader
-import tools.xyz as xyz
+import global_vars as global_vars
+import lib.xyz as xyz
 from grads import Sympy_Grad
+from point_processor import point_generator
+
+@dataclass
+class Pes_Point:
+    energy: float
+    coords: np.array
+    grads: np.array
+    freqs: np.array
+    transform_matrix: np.array
+
+    grads_source = Sympy_Grad.initialize(global_vars.NUM_ATOMS)
+    calc_inv_dist = grads_source.calc_inv_dist
+
+    @classmethod
+    def from_file(cls, file_loc):
+        with open(file_loc) as f:
+            lines = f.readlines()
+            energy = float(lines[0])
+            coords = np.array([float(i) for i in lines[1].split()]).reshape((global_vars.NUM_ATOMS, 3))
+            grads = np.array([float(i) for i in lines[2].split()])
+            freqs = np.array([float(i) for i in lines[3].split()])
+            trans_mat = np.array([float(i) for i in lines[4].split()]).reshape((3*global_vars.NUM_ATOMS - 6, 3*global_vars.NUM_ATOMS - 6))
+        return cls(energy, coords, grads, freqs, trans_mat)
+
+    @cached_property
+    def inv_dist(self):
+        return Pes_Point.calc_inv_dist(self.coords.reshape(-1))
+
+    def taylor_approx(self, other_inv_dist):
+        eta_new = self.transform_matrix @ other_inv_dist
+        eta_old = self.transform_matrix @ self.inv_dist
+        eta_diff = eta_new - eta_old
+        return self.energy + np.dot(eta_diff, self.grads) + np.dot(np.power(eta_diff, 2), self.freqs)
 
 
 @dataclass
 class Pes:
-    # TODO: flush out setting and accessing parameters
-    #debug: bool
-    #geom_list: list
-    z_list: list
-    e_list: list
-    grad_list: list
-    hess_list: list
-    m_list: list
-    params: dict
-    pnt_gen: point_generator
-    #TODO: implement permutation invariance
+    point_list: list
+
+    #TODO discuss, but I think permutation invariance is best implemented by 
+    #making copies of each point with the permutation applied
 
     @classmethod
-    def new(cls):
-        return cls([],[],[],[],[],{"p":42}, point_generator(None,Sympy_Grad.initialize(g.num_atoms)))
-
-    # @classmethod
-    # def load_from_file_debug(cls, file):
-    #     raise NotImplementedError
+    def new_pes(cls):
+        return Pes([])
 
     @classmethod
-    def load_from_file(cls, file):
-        raise NotImplementedError
+    def pes_from_folder(cls, path):
+        fold = Path(path)
+        pt_list = []
+        for i in fold.glob("*"):
+            pt_list.append(Pes_Point.from_file(i))
 
-    # def save_debug(self, dest):
-    #     raise NotImplementedError
+    def add_point(self, path):
+        self.point_list.append(Pes_Point.from_file(Path(path)))
 
-    def save(self, dest):
-        raise NotImplementedError
+    def weight(self, z1, z2):
+        return np.power(np.sum(np.power(z1 - z2, global_vars.WEIGHTING_PARAM)), 1 / global_vars.WEIGHTING_PARAM)
 
-    def weight(self,z1,z2):
-        np.power(np.power(z1-z2,self.params["p"]),1/self.params["p"])
-
-    def taylor(self,z,pnt_ind):
-        eta_new = self.m_list[pnt_ind] @ z
-        eta_old = self.m_list[pnt_ind] @ self.z_list[pnt_ind]
-        eta_diff = eta_new-eta_old
-        return self.e_list[pnt_ind] + np.dot(eta_diff,self.grad_list[pnt_ind]) + np.dot(np.pow(eta_diff,2),self.hess_list[pnt_ind])
-
-    def eval_point(self, geom):
-        """
-        given a new geometry, interpolates between all of the points already seen
-
-            Returns:
-                energy at the point
-        """
-        #TODO implement group symmetry
-        self.pnt_gen.update_point(geom)
-        z = self.pnt_gen.z()
+    def eval_point(self, geom: xyz.Geometry):
+        # TODO symmeterize, grab gradients while we're at it
+        inv_dist = Pes_Point.calc_inv_dist(geom.coords.reshape(-1))
         weights = []
-        taylors = []
-        for i in range(len(self.z_list)):
-            weights.append(self.weight(z,self.z_list[i]))
-            taylors.append(self.taylor(z,i))
-        weight_sum = sum(weights)
-        e = 0
-        for i in range(len(self.z_list)):
-            e += weights[i]*taylors[i]/weight_sum
-        return e
+        energies = []
+        for i in self.point_list:
+            weights.append(self.weight(i.inv_dist, inv_dist))
+            energies.append(i.taylor_approx(inv_dist))
+        weights = np.array(weights)
+        energies = np.array(energies)
+        weights = weights/np.linalg.norm(weights)
 
-    def add_point(self, calc, jobname="geom"):
-        geom = xyz.Geometry.from_file(calc / f"{jobname}.xyz")
-        #self.geom_list.append(geom)
-        # little hack, the output file from the hessian calc first does a gradient at the point
-        tc_grad = tcReader.gradient.from_file(calc / "tc.out")
-        #self.grad_list.append(tc_grad.grad)
-        tc_hess = tcReader.Hessian.from_bin(calc / f"scr.{jobname}/Hessian.bin")
-        #self.hess_list.append(tc_hess.hess)
-        self.pnt_gen.update_point(xyz.Geometry.from_file(calc/f"{jobname}.xyz"))
-        z,g,h,m = self.pnt_gen.get_pes_properties(tc_grad.grad.reshape(-1),tc_hess.hess)
-        self.z_list.append(z)
-        self.e_list.append(tc_grad.energy)
-        self.grad_list.append(g)
-        self.hess_list.append(h)
-        self.m_list.append(m)
+        print(weights)
+        print(energies)
+
+        return np.dot(weights,energies)
+
+if __name__ == "__main__":
+
+    global_vars.NUM_ATOMS = 4
+
+    print("testing pes")
+    path = Path("./test/sheppard_pes/c4.xyz")
+    g = xyz.Geometry.from_file(path)
+    calc = point_generator(g, 0, np.zeros(12), np.ones((12,12)))
+    calc.write_point("./test/sheppard_pes/c4.out")
+
+    pes = Pes.new_pes()
+    pes.add_point("./test/sheppard_pes/c4.out")
+
+    test_path = Path("./test/sheppard_pes/c4.test.xyz")
+    test_geom = xyz.Geometry.from_file(test_path)
+    e = pes.eval_point(test_geom)
+    print(e)
