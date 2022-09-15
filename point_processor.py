@@ -13,13 +13,11 @@ class point_generator:
     energy: float
     grad: np.array
     hess: np.array
-    # TODO: inherit from a gradient calculator
-    # TODO: optimize by caching intermediate results
 
     grad_source = Sympy_Grad.initialize(global_vars.NUM_ATOMS)
 
     @cached_property
-    def z(self):
+    def inv_dist(self):
         """
         returns the inverse interatomic bond distances
 
@@ -36,7 +34,7 @@ class point_generator:
             Returns:
                 nC2 x 3n numpy array where n is the number of atoms
         """
-        return point_generator.grad_source.calc_b(self.geom.coords.reshape(-1))
+        return point_generator.grad_source.calc_inv_jacobian(self.geom.coords.reshape(-1))
 
     @cached_property
     def b2(self):
@@ -46,7 +44,7 @@ class point_generator:
             Returns:
                 nC2 x 3n x 3n tensor (numpy array) where n is the number of atoms
         """
-        return point_generator.grad_source.calc_b2(self.geom.coords.reshape(-1))
+        return point_generator.grad_source.calc_inv_hessian(self.geom.coords.reshape(-1))
 
     @cached_property
     def u(self):
@@ -90,11 +88,9 @@ class point_generator:
             Returns:
                 3n-6 x 3n-6 array of the hessian
         """
-        dvdzeta = self.dV_dzeta
-        other_term = np.tensordot(self.dzeta2_dx2, dvdzeta, axes=([0],[0]))
+        other_term = np.tensordot(self.dzeta2_dx2, self.dV_dzeta, axes=([0],[0]))
         mod_hess = self.hess - other_term
-        dzetadx = self.dzeta_dx
-        dv2dzeta2 = np.linalg.pinv(dzetadx.T) @ mod_hess @ np.linalg.pinv(dzetadx)
+        dv2dzeta2 = np.linalg.pinv(self.dzeta_dx.T) @ mod_hess @ np.linalg.pinv(self.dzeta_dx)
         return dv2dzeta2
 
     @cached_property

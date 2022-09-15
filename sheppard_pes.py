@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import global_vars as global_vars
 import lib.xyz as xyz
 from grads import Sympy_Grad
+from grads import numerical_grad
 from point_processor import point_generator
 
 @dataclass
@@ -27,7 +28,7 @@ class Pes_Point:
             coords = np.array([float(i) for i in lines[1].split()]).reshape((global_vars.NUM_ATOMS, 3))
             grads = np.array([float(i) for i in lines[2].split()])
             freqs = np.array([float(i) for i in lines[3].split()])
-            trans_mat = np.array([float(i) for i in lines[4].split()]).reshape((3*global_vars.NUM_ATOMS - 6, 3*global_vars.NUM_ATOMS - 6))
+            trans_mat = np.array([float(i) for i in lines[4].split()]).reshape((3*global_vars.NUM_ATOMS - 6, global_vars.NUM_ATOMS*(global_vars.NUM_ATOMS-1)//2))
         return cls(energy, coords, grads, freqs, trans_mat)
 
     @cached_property
@@ -38,6 +39,9 @@ class Pes_Point:
         eta_new = self.transform_matrix @ other_inv_dist
         eta_old = self.transform_matrix @ self.inv_dist
         eta_diff = eta_new - eta_old
+        print(np.dot(np.power(eta_diff, 2), self.freqs))
+        print(eta_diff)
+        print(self.freqs)
         return self.energy + np.dot(eta_diff, self.grads) + np.dot(np.power(eta_diff, 2), self.freqs)
 
 
@@ -59,7 +63,7 @@ class Pes:
         for i in fold.glob("*"):
             pt_list.append(Pes_Point.from_file(i))
 
-    def add_point(self, path):
+    def add_point(self, path, symmeterize=True):
         self.point_list.append(Pes_Point.from_file(Path(path)))
 
     def weight(self, z1, z2):
@@ -77,25 +81,47 @@ class Pes:
         energies = np.array(energies)
         weights = weights/np.linalg.norm(weights)
 
-        print(weights)
-        print(energies)
-
         return np.dot(weights,energies)
 
 if __name__ == "__main__":
-
-    global_vars.NUM_ATOMS = 4
-
     print("testing pes")
-    path = Path("./test/sheppard_pes/c4.xyz")
+
+    # construct artificial hessian for testing purpose
+    # artificial hessian puts a harmonic potential on all interatomic distances
+    path = Path("./test/sheppard_pes/BuH.xyz")
     g = xyz.Geometry.from_file(path)
-    calc = point_generator(g, 0, np.zeros(12), np.ones((12,12)))
-    calc.write_point("./test/sheppard_pes/c4.out")
+
+    def pseudo(coords):
+        ref = Pes_Point.calc_inv_dist(g.coords.reshape(-1))
+        z = Pes_Point.calc_inv_dist(coords)
+        v = z - ref
+        return 0.5 * np.dot(v,v)
+
+    H = numerical_grad.hess_3pt(pseudo, g.coords.reshape(-1))
+
+    calc = point_generator(g, 0, np.zeros(42), H)
+    calc.write_point("./test/sheppard_pes/BuH.out")    
 
     pes = Pes.new_pes()
-    pes.add_point("./test/sheppard_pes/c4.out")
-
-    test_path = Path("./test/sheppard_pes/c4.test.xyz")
+    pes.add_point("./test/sheppard_pes/BuH.out")
+    test_path = Path("./test/sheppard_pes/BuH.test.1.xyz")
     test_geom = xyz.Geometry.from_file(test_path)
+    print(f"evaluated pseudo at test: {pseudo(test_geom.coords.reshape(-1))}")
     e = pes.eval_point(test_geom)
-    print(e)
+    print(f"evaluated sheppard at test: {e}")
+
+    # need to fix this for better test
+    #global_vars.NUM_ATOMS = 4
+
+    #path = Path("./test/sheppard_pes/c4.xyz")
+    #g = xyz.Geometry.from_file(path)
+    #calc = point_generator(g, 0, np.zeros(12), np.ones((12,12)))
+    #calc.write_point("./test/sheppard_pes/c4.out")
+
+    #pes = Pes.new_pes()
+    #pes.add_point("./test/sheppard_pes/c4.out")
+
+    #test_path = Path("./test/sheppard_pes/c4.test.2.xyz")
+    #test_geom = xyz.Geometry.from_file(test_path)
+    #e = pes.eval_point(test_geom)
+    #print(e)

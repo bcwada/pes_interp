@@ -4,7 +4,7 @@ Provides classes that supply functions to calculate inverse interatomic distance
 Classes:
     Sympy_Grad
 """
-from functools import cache, cached_property
+from functools import cached_property
 import numpy as np
 import sympy
 from itertools import combinations
@@ -95,7 +95,7 @@ class Sympy_Grad:
             return func
 
     @property
-    def calc_b(self):
+    def calc_inv_jacobian(self):
         """
         returns a function that will calculate B given the 1D coords (atom1x,atom1y,atom1z,atom2x...)
         eq. 3.3
@@ -123,7 +123,7 @@ class Sympy_Grad:
             return func
 
     @property
-    def calc_b2(self):
+    def calc_inv_hessian(self):
         """
         returns a function that will calculate z given the 1D coords (atom1x,atom1y,atom1z,atom2x...)
         eq. 3.4
@@ -136,3 +136,73 @@ class Sympy_Grad:
             unpack = lambda x: np.array(func(*x))
             self.funcs["calc_b2"] = unpack
             return unpack
+
+@dataclass
+class numerical_grad:
+
+    @staticmethod
+    def grad_2pt(func, coords, delta=0.01):
+        """
+        take coords in as a 1D array
+        """
+        L = []
+        num_coords = len(coords)
+        for i in range(num_coords):
+            pcoords = np.zeros_like(coords)
+            mcoords = np.zeros_like(coords)
+            pcoords = coords
+            mcoords = coords
+            pcoords[i] += delta
+            mcoords[i] -= delta
+            pfunc = func(pcoords)
+            mfunc = func(mcoords)
+            L.append((pfunc-mfunc)/(2*delta))
+        return L
+
+    @staticmethod
+    def hess_2pt(func, coords, delta=0.01):
+        """
+        func returns an array-like object
+        """
+        # TODO: the two calls to grad_2pt result in redundant calcs
+        L = []
+        num_coords = len(coords)
+        for i in range(num_coords):
+            pcoords = np.zeros_like(coords)
+            mcoords = np.zeros_like(coords)
+            pcoords = coords
+            mcoords = coords
+            pcoords[i] += delta
+            mcoords[i] -= delta
+            pgrad = numerical_grad.grad_2pt(func,pcoords,delta=delta)
+            mgrad = numerical_grad.grad_2pt(func,mcoords,delta=delta)
+
+            L.append((pgrad-mgrad)/(2*delta))
+
+        return np.array(L)
+
+    @staticmethod
+    def hess_3pt(func, coords, delta=0.01):
+        """
+        func returns an array-like object
+        """
+        # oops, this is wrong
+        raise NotImplementedError
+        L = []
+        num_coords = len(coords)
+        cfunc = func(coords)
+        for i in range(num_coords):
+            pcoords = np.zeros_like(coords)
+            mcoords = np.zeros_like(coords)
+            pcoords = coords
+            mcoords = coords
+            pcoords[i] += delta
+            mcoords[i] -= delta
+            pfunc = func(pcoords)
+            mfunc = func(mcoords)
+
+            pgrad = (pfunc-cfunc)/(delta)
+            mgrad = (cfunc-mfunc)/(delta)
+            L.append((pgrad-mgrad)/(delta))
+
+        return np.array(L)
