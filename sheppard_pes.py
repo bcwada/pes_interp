@@ -77,6 +77,7 @@ class Pes:
         pt_list = []
         for i in fold.glob("*"):
             pt_list.append(Pes_Point.from_file(i))
+        return cls(pt_list)
 
     def add_point(self, path, symmeterize=True):
         if not symmeterize:
