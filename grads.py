@@ -148,19 +148,17 @@ class numerical_grad:
         L = []
         num_coords = len(coords)
         for i in range(num_coords):
-            pcoords = np.zeros_like(coords)
-            mcoords = np.zeros_like(coords)
-            pcoords = coords
-            mcoords = coords
+            pcoords = coords.copy()
+            mcoords = coords.copy()
             pcoords[i] += delta
             mcoords[i] -= delta
             pfunc = func(pcoords)
             mfunc = func(mcoords)
             L.append((pfunc-mfunc)/(2*delta))
-        return L
+        return np.array(L)
 
     @staticmethod
-    def hess_2pt(func, coords, delta=0.01):
+    def hess_2pt(func, coords, delta=0.0001):
         """
         func returns an array-like object
         """
@@ -168,10 +166,8 @@ class numerical_grad:
         L = []
         num_coords = len(coords)
         for i in range(num_coords):
-            pcoords = np.zeros_like(coords)
-            mcoords = np.zeros_like(coords)
-            pcoords = coords
-            mcoords = coords
+            pcoords = coords.copy()
+            mcoords = coords.copy()
             pcoords[i] += delta
             mcoords[i] -= delta
             pgrad = numerical_grad.grad_2pt(func,pcoords,delta=delta)
@@ -182,7 +178,7 @@ class numerical_grad:
         return np.array(L)
 
     @staticmethod
-    def hess_3pt(func, coords, delta=0.01):
+    def hess_3pt(func, coords, delta=0.0001):
         """
         func returns an array-like object
         """

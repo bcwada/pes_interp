@@ -2,12 +2,15 @@ from functools import cached_property
 from pathlib import Path
 import numpy as np
 from dataclasses import dataclass
+import itertools
 
-import global_vars as global_vars
+import global_vars
 import lib.xyz as xyz
 from grads import Sympy_Grad
 from grads import numerical_grad
 from point_processor import point_generator
+
+LEVEL_SHIFT = 1e-20
 
 @dataclass
 class Pes_Point:
@@ -35,22 +38,34 @@ class Pes_Point:
     def inv_dist(self):
         return Pes_Point.calc_inv_dist(self.coords.reshape(-1))
 
+    def taylor_approx_from_coords(self, other_coords):
+        other_inv_dist = Pes_Point.calc_inv_dist(other_coords)
+        return self.taylor_approx_from_inv_dist(other_inv_dist)
+
     def taylor_approx(self, other_inv_dist):
         eta_new = self.transform_matrix @ other_inv_dist
         eta_old = self.transform_matrix @ self.inv_dist
         eta_diff = eta_new - eta_old
-        print(np.dot(np.power(eta_diff, 2), self.freqs))
-        print(eta_diff)
-        print(self.freqs)
-        return self.energy + np.dot(eta_diff, self.grads) + np.dot(np.power(eta_diff, 2), self.freqs)
+        #print(np.dot(np.power(eta_diff, 2), self.freqs))
+        #print(eta_diff)
+        #print(self.freqs)
+        return self.energy + np.dot(eta_diff, self.grads) + 0.5*np.dot(np.power(eta_diff, 2), self.freqs)
 
+    def permute_coords(self,perm):
+        """
+        perm is a permutation with the same shape as global_vars.PERMUTATION_GROUP
+        """
+        # maybe TODO, this is tightly coupled to global_vars now
+        for orig_group, permed_group in zip(global_vars.PERMUTATION_GROUPS,perm):
+            copied_coords = []
+            for index in orig_group:
+                copied_coords.append(self.coords[index].copy())
+            for temp_index,index in enumerate(permed_group):
+                self.coords[index] = copied_coords[temp_index]
 
 @dataclass
 class Pes:
     point_list: list
-
-    #TODO discuss, but I think permutation invariance is best implemented by 
-    #making copies of each point with the permutation applied
 
     @classmethod
     def new_pes(cls):
@@ -64,13 +79,20 @@ class Pes:
             pt_list.append(Pes_Point.from_file(i))
 
     def add_point(self, path, symmeterize=True):
-        self.point_list.append(Pes_Point.from_file(Path(path)))
+        if not symmeterize:
+            self.point_list.append(Pes_Point.from_file(Path(path)))
+        else:
+            perms = [itertools.permutations(i) for i in global_vars.PERMUTATION_GROUPS]
+            combs = itertools.product(*perms)
+            for c in combs:
+                pt = Pes_Point.from_file(Path(path))
+                pt.permute_coords(c)
+                self.point_list.append(pt)
 
     def weight(self, z1, z2):
-        return np.power(np.sum(np.power(z1 - z2, global_vars.WEIGHTING_PARAM)), 1 / global_vars.WEIGHTING_PARAM)
+        return 1 / LEVEL_SHIFT + np.power(np.sum(np.power(z1 - z2, global_vars.WEIGHTING_PARAM)), 1 / global_vars.WEIGHTING_PARAM)
 
-    def eval_point(self, geom: xyz.Geometry):
-        # TODO symmeterize, grab gradients while we're at it
+    def eval_point_geom(self, geom: xyz.Geometry):
         inv_dist = Pes_Point.calc_inv_dist(geom.coords.reshape(-1))
         weights = []
         energies = []
@@ -80,35 +102,76 @@ class Pes:
         weights = np.array(weights)
         energies = np.array(energies)
         weights = weights/np.linalg.norm(weights)
-
         return np.dot(weights,energies)
+
+    def eval_point(self, coords):
+        inv_dist = Pes_Point.calc_inv_dist(coords)
+        weights = []
+        energies = []
+        for i in self.point_list:
+            weights.append(self.weight(i.inv_dist, inv_dist))
+            energies.append(i.taylor_approx(inv_dist))
+        weights = np.array(weights)
+        print(weights)
+        energies = np.array(energies)
+        weights = weights/np.linalg.norm(weights)
+        return np.dot(weights,energies)
+
+    def eval_gradient(self, coords):
+        return numerical_grad.grad_2pt(self.eval_point, coords)
 
 if __name__ == "__main__":
     print("testing pes")
 
-    # construct artificial hessian for testing purpose
-    # artificial hessian puts a harmonic potential on all interatomic distances
     path = Path("./test/sheppard_pes/BuH.xyz")
     g = xyz.Geometry.from_file(path)
-
+    # artificial potential function puts a harmonic potential on all interatomic distances
     def pseudo(coords):
         ref = Pes_Point.calc_inv_dist(g.coords.reshape(-1))
         z = Pes_Point.calc_inv_dist(coords)
         v = z - ref
         return 0.5 * np.dot(v,v)
 
-    H = numerical_grad.hess_3pt(pseudo, g.coords.reshape(-1))
+    # construct artificial hessian for testing purpose using artificial potential function
 
-    calc = point_generator(g, 0, np.zeros(42), H)
-    calc.write_point("./test/sheppard_pes/BuH.out")    
+    # print("calculating numerical Hessian")
+    # H = numerical_grad.hess_2pt(pseudo, g.coords.reshape(-1))
+    # print("calculated numerical Hessian")
 
+    # calc = point_generator(g, 0, np.zeros(42), H)
+    # calc.write_point("./test/sheppard_pes/BuH.out")    
+
+    print("Energy Test 0: get energy back at same point")
+    pes = Pes.new_pes()
+    pes.add_point("./test/sheppard_pes/BuH.out", symmeterize=False)
+    test_path = Path("./test/sheppard_pes/BuH.xyz")
+    test_geom = xyz.Geometry.from_file(test_path)
+    print(f"evaluated pseudo at test: {pseudo(test_geom.coords.reshape(-1))}")
+    e = pes.eval_point(test_geom.coords.reshape(-1))
+    print(f"evaluated sheppard at test: {e}")
+
+    pes = Pes.new_pes()
+    pes.add_point("./test/sheppard_pes/BuH.out", symmeterize=False)
+    test_path = Path("./test/sheppard_pes/BuH.test.1.xyz")
+    test_geom = xyz.Geometry.from_file(test_path)
+    print("Energy Test 1: single point")
+    print(f"evaluated pseudo at test: {pseudo(test_geom.coords.reshape(-1))}")
+    e = pes.eval_point(test_geom.coords.reshape(-1))
+    print(f"evaluated sheppard at test: {e}")
+    print("Gradient Test 1")
+    print(f"pseudo potential numerical grad: {numerical_grad.grad_2pt(pseudo,test_geom.coords.reshape(-1))}")
+    print(f"pes numerical grad: {pes.eval_gradient(test_geom.coords.reshape(-1))}")
+
+    print("Energy Test 2: single point")
     pes = Pes.new_pes()
     pes.add_point("./test/sheppard_pes/BuH.out")
     test_path = Path("./test/sheppard_pes/BuH.test.1.xyz")
     test_geom = xyz.Geometry.from_file(test_path)
     print(f"evaluated pseudo at test: {pseudo(test_geom.coords.reshape(-1))}")
-    e = pes.eval_point(test_geom)
+    e = pes.eval_point(test_geom.coords.reshape(-1))
     print(f"evaluated sheppard at test: {e}")
+
+
 
     # need to fix this for better test
     #global_vars.NUM_ATOMS = 4

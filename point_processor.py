@@ -77,8 +77,9 @@ class point_generator:
                 3n-6 array of the gradient
         """
         # TODO: Should solve the overconstrained optimization rather than truncate like this
-        a = self.dzeta_dx[:,:-6]
-        return np.linalg.solve(a.T, self.grad[:-6])
+        # a = self.dzeta_dx[:,:-6]
+        # return np.linalg.solve(a.T, self.grad[:-6])
+        return np.linalg.pinv(self.dzeta_dx.T) @ self.grad
 
     @cached_property
     def dV2_dzeta2(self):
