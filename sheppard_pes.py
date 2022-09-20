@@ -98,7 +98,7 @@ class Pes:
     def pes_from_folder(cls, path):
         fold = Path(path)
         pt_list = []
-        for i in fold.glob("*"):
+        for i in fold.glob("*.out"):
             pt_list.append(Pes_Point.from_file(i))
         return cls(pt_list)
 
@@ -164,7 +164,7 @@ if __name__ == "__main__":
         print(f"running test with {name}")
         print(f"evaluated pseudo at test: {pseudo(test_geom.coords.reshape(-1))}")
         e = pes.eval_point(test_geom.coords.reshape(-1))
-        print(f"evaluated sheppard at test: {e}")     
+        print(f"evaluated sheppard at test: {e}")
         print("\n")
 
     # construct artificial hessian for testing purpose using artificial potential function
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     # print("calculated numerical Hessian")
 
     # calc = point_generator(g, 0, np.zeros(42), H)
-    # calc.write_point("./test/sheppard_pes/BuH.out")    
+    # calc.write_point("./test/sheppard_pes/BuH.out")
 
     print("Energy Test 0: get energy back at same point")
     pes = Pes.new_pes()
