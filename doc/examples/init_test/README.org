@@ -1,0 +1,40 @@
+* File Hierarchy
+
+** =run.sh=
+
+  Example script running the dynamics program
+
+** =init_conds=
+
+
+
+** =output=
+
+** =pes_files=
+
+*** File structure:
+    * Energy
+    * coordinates
+    * gradients
+    * frequencies
+    * transformation to normal modes
+
+*** Obtaining files
+
+One file per point
+
+#+begin_src python
+  path = Path("./test/sheppard_pes/BuH.xyz")
+  q = xyz.Geometry.from_file(path)
+  #
+  gr_obj=gradient.from_file(tc_output)
+  grad=gr_obj.grad
+  E=gr_obj.energy
+  # called hessian.bin
+  H=Hessian.from_bin(tc_bin_output)
+  #obtain E, grad, H from TC file see the parser in lib
+  calc = point_generator(q, E, grad, H)
+  calc.write_point("./test/sheppard_pes/BuH.out")
+#+end_src
+
+** =tc_files=
