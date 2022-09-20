@@ -1,0 +1,9 @@
+spinmult 1
+charge 0
+basis           def2-svp
+coordinates     geom.xyz
+guess           sad
+method          b3lyp
+run             gradient
+new_minimizer   true
+xtol            0.0001

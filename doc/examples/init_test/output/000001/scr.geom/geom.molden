@@ -1,0 +1,530 @@
+[Molden Format]
+[Title]
+Written by TeraChem
+[Atoms] Angs
+C   1   6     -0.40306    1.27752    0.31069
+C   2   6      0.92797    0.13469   -0.27294
+C   3   6     -0.02127   -1.25356    0.20970
+C   4   6     -1.43351   -1.62496   -0.24301
+H   5   1      0.00541    2.24734   -0.04370
+H   6   1     -0.35845    1.25813    1.42034
+H   7   1     -1.46046    1.21382   -0.01715
+H   8   1      1.48341    0.28385    0.04250
+H   9   1      0.38975    0.17751   -1.38314
+H   10   1      0.03809   -1.30365    1.31867
+H   11   1      0.68091   -2.00715   -0.20833
+H   12   1     -3.18834   -0.93804    0.19060
+H   13   1     -1.67144   -2.65342    0.10143
+H   14   1     -1.50216   -1.59730   -1.35125
+[GTO]
+    1 0
+ s    5 1.00
+         1238.401694             0.005517
+          186.290050             0.041089
+           42.251176             0.182254
+           11.676558             0.468285
+            3.593051             0.445758
+ s    1 1.00
+            0.402451             1.000000
+ s    1 1.00
+            0.130902             1.000000
+ p    3 1.00
+            9.468097             0.056888
+            2.010355             0.312941
+            0.547710             0.760650
+ p    1 1.00
+            0.152686             1.000000
+ d    1 1.00
+            0.800000             1.000000
+
+    2 0
+ s    5 1.00
+         1238.401694             0.005517
+          186.290050             0.041089
+           42.251176             0.182254
+           11.676558             0.468285
+            3.593051             0.445758
+ s    1 1.00
+            0.402451             1.000000
+ s    1 1.00
+            0.130902             1.000000
+ p    3 1.00
+            9.468097             0.056888
+            2.010355             0.312941
+            0.547710             0.760650
+ p    1 1.00
+            0.152686             1.000000
+ d    1 1.00
+            0.800000             1.000000
+
+    3 0
+ s    5 1.00
+         1238.401694             0.005517
+          186.290050             0.041089
+           42.251176             0.182254
+           11.676558             0.468285
+            3.593051             0.445758
+ s    1 1.00
+            0.402451             1.000000
+ s    1 1.00
+            0.130902             1.000000
+ p    3 1.00
+            9.468097             0.056888
+            2.010355             0.312941
+            0.547710             0.760650
+ p    1 1.00
+            0.152686             1.000000
+ d    1 1.00
+            0.800000             1.000000
+
+    4 0
+ s    5 1.00
+         1238.401694             0.005517
+          186.290050             0.041089
+           42.251176             0.182254
+           11.676558             0.468285
+            3.593051             0.445758
+ s    1 1.00
+            0.402451             1.000000
+ s    1 1.00
+            0.130902             1.000000
+ p    3 1.00
+            9.468097             0.056888
+            2.010355             0.312941
+            0.547710             0.760650
+ p    1 1.00
+            0.152686             1.000000
+ d    1 1.00
+            0.800000             1.000000
+
+    5 0
+ s    3 1.00
+           13.010701             0.033485
+            1.962257             0.234722
+            0.444538             0.813770
+ s    1 1.00
+            0.121950             1.000000
+ p    1 1.00
+            0.800000             1.000000
+
+    6 0
+ s    3 1.00
+           13.010701             0.033485
+            1.962257             0.234722
+            0.444538             0.813770
+ s    1 1.00
+            0.121950             1.000000
+ p    1 1.00
+            0.800000             1.000000
+
+    7 0
+ s    3 1.00
+           13.010701             0.033485
+            1.962257             0.234722
+            0.444538             0.813770
+ s    1 1.00
+            0.121950             1.000000
+ p    1 1.00
+            0.800000             1.000000
+
+    8 0
+ s    3 1.00
+           13.010701             0.033485
+            1.962257             0.234722
+            0.444538             0.813770
+ s    1 1.00
+            0.121950             1.000000
+ p    1 1.00
+            0.800000             1.000000
+
+    9 0
+ s    3 1.00
+           13.010701             0.033485
+            1.962257             0.234722
+            0.444538             0.813770
+ s    1 1.00
+            0.121950             1.000000
+ p    1 1.00
+            0.800000             1.000000
+
+   10 0
+ s    3 1.00
+           13.010701             0.033485
+            1.962257             0.234722
+            0.444538             0.813770
+ s    1 1.00
+            0.121950             1.000000
+ p    1 1.00
+            0.800000             1.000000
+
+   11 0
+ s    3 1.00
+           13.010701             0.033485
+            1.962257             0.234722
+            0.444538             0.813770
+ s    1 1.00
+            0.121950             1.000000
+ p    1 1.00
+            0.800000             1.000000
+
+   12 0
+ s    3 1.00
+           13.010701             0.033485
+            1.962257             0.234722
+            0.444538             0.813770
+ s    1 1.00
+            0.121950             1.000000
+ p    1 1.00
+            0.800000             1.000000
+
+   13 0
+ s    3 1.00
+           13.010701             0.033485
+            1.962257             0.234722
+            0.444538             0.813770
+ s    1 1.00
+            0.121950             1.000000
+ p    1 1.00
+            0.800000             1.000000
+
+   14 0
+ s    3 1.00
+           13.010701             0.033485
+            1.962257             0.234722
+            0.444538             0.813770
+ s    1 1.00
+            0.121950             1.000000
+ p    1 1.00
+            0.800000             1.000000
+
+[MO]
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 2.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 2.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 2.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 2.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 2.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 2.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 2.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 2.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 2.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 2.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 2.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 2.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 2.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 2.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 2.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 2.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 2.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
+ Ene=     0.0000
+ Spin= Alpha
+ Occup= 0.0
