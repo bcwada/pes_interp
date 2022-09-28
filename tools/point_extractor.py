@@ -24,6 +24,7 @@ output_dir=args.pes_files
 
 
 for log_file in output_dir.glob("*.log"):
+    print(f"Processing {log_file}...")
     basename=str(log_file)
     basename=basename[:-4]
     xyz_file=Path(basename+".xyz")
