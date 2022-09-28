@@ -36,8 +36,7 @@ for log_file in output_dir.glob("*.log"):
     grad_obj=tcReader.gradient.from_file(log_file)
     E=grad_obj.energy
     grad=grad_obj.grad.reshape(-1)
-    H=tcReader.Hessian.from_bin(bin_file)
+    H=tcReader.Hessian.from_bin(bin_file).hess
     # #obtain E, grad, H from TC file see the parser in lib
     calc = point_generator(q, E, grad, H)
     calc.write_point(basename+".out")
-    exit()
