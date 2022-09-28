@@ -35,7 +35,7 @@ for log_file in output_dir.glob("*.log"):
     q = xyz.Geometry.from_file(xyz_file)
     grad_obj=tcReader.gradient.from_file(log_file)
     E=grad_obj.energy
-    grad=grad_obj.grad
+    grad=grad_obj.grad.reshape(-1)
     H=tcReader.Hessian.from_bin(bin_file)
     # #obtain E, grad, H from TC file see the parser in lib
     calc = point_generator(q, E, grad, H)
