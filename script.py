@@ -1,3 +1,4 @@
+#!/bin/env python3
 import argparse
 import numpy as np
 from pathlib import Path
@@ -7,13 +8,20 @@ from dynamics import trajectory
 import lib.xyz as xyz
 
 def parse():
-    parser = argparse.ArgumentParser(description="first hacky version of combined ES and PES interpolation code")
-    parser.add_argument("pes_files", type=Path, help="folder of files to read in for the PES")
-    parser.add_argument("tc_files", type=Path, help="folder of files to read in for the electronic structure calculations")
-    parser.add_argument("init_conds", type=Path, help="folder of files detailing initial positions and velocities")
-    parser.add_argument("timestep", type=float, help="timestep in a.u.")
-    parser.add_argument("duration", type=float, help="total time to run the simulation")
-    parser.add_argument("destination", type=Path, help="Where to save the output files")
+    parser = argparse.ArgumentParser(
+        description="First hacky version of combined ES and PES interpolation code")
+    parser.add_argument("pes_files", type=Path,
+                        help="Path containings points for the PES")
+    parser.add_argument("tc_files", type=Path,
+                        help="Path for electronic structure calculations")
+    parser.add_argument("init_conds", type=Path,
+                        help="Path detailing initial positions and velocities")
+    parser.add_argument("timestep", type=float,
+                        help="timestep in a.u.")
+    parser.add_argument("duration", type=float,
+                        help="Total time to run the simulation")
+    parser.add_argument("destination", type=Path,
+                        help="Path for output files")
     return parser.parse_args()
 
 def write_file(energy, gradient, dest):

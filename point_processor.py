@@ -2,6 +2,7 @@ from functools import cached_property
 import numpy as np
 from dataclasses import dataclass
 from pathlib import Path
+import os
 
 import lib.xyz as xyz
 import global_vars
@@ -116,8 +117,21 @@ class point_generator:
     def dV_deta(self):
         return self.l.T @ self.dV_dzeta
 
-    def write_point(self, dest):
-        with open(dest,'w') as f:
+    def write_point(self, filename):
+        """Export internalized point to FILENAME.
+
+        FILENAME should be the name of the file to be written, including the path.
+
+        File extensions are ignored. The standard file extension is .pt (point file).
+        Points with imaginary frequencies use .ex (exclude).
+
+        """
+        filename=os.path.splitext(filename)[0]
+        if self.frequencies[0] < 0:
+            filename=filename+".ex"
+        else:
+            filename=filename+".pt"
+        with open(filename,'w') as f:
             #energey
             f.write(str(self.energy))
             f.write("\n")
