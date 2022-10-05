@@ -98,7 +98,7 @@ class Pes:
     def pes_from_folder(cls, path):
         fold = Path(path)
         pt_list = []
-        for i in fold.glob("*.out"):
+        for i in fold.glob("*.pt"):
             pt_list.append(Pes_Point.from_file(i))
         return cls(pt_list)
 
