@@ -31,22 +31,38 @@ def points_from_dir(tc_dir,output_dir=None):
         xyz_file=Path(filename+".xyz")
         bin_file=Path(filename+".bin")
         outname=output_dir/path.basename(filename)
-        if not path.exists(xyz_file):
-            raise Exception("missing xyz file: {}".format(xyz_file))
-        elif not path.exists(bin_file):
-            raise Exception("missing bin file: {}".format(bin_file))
-        q = xyz.Geometry.from_file(xyz_file)
-        grad_obj=tcReader.gradient.from_file(log_file)
-        E=grad_obj.energy
-        grad=grad_obj.grad.reshape(-1)
-        H=tcReader.Hessian.from_bin(bin_file).hess
-        calc = point_generator(q, E, grad, H)
-        calc.write_point(outname)
-        if __name__ == "__main__" and (calc.frequencies[0] < 0):
-            print(" Imaginary frequencies found!")
-        elif __name__ == "__main__":
-            print("")
+        point_from_files(log_file,xyz_file,bin_file,outname)
 
+def point_from_files(log_file,xyz_file,bin_file,outname):
+    """Convert TeraChem output files to internal format.
+
+    log_file is the TC output file.
+    xyz_file is the cartesian point file.
+    bin_file.xyz is the binary containing the Hessian.
+    outname is the file to write to, sans extension.
+
+    Data points with imaginary frequencies are written to .ex files,
+    otherwise they are written to .pt files.
+
+    All arguments are expected to be path-like objects.
+
+    """
+    outname=output_dir/path.basename(filename)
+    if not path.exists(xyz_file):
+        raise Exception("missing xyz file: {}".format(xyz_file))
+    elif not path.exists(bin_file):
+        raise Exception("missing bin file: {}".format(bin_file))
+    q = xyz.Geometry.from_file(xyz_file)
+    grad_obj=tcReader.gradient.from_file(log_file)
+    E=grad_obj.energy
+    grad=grad_obj.grad.reshape(-1)
+    H=tcReader.Hessian.from_bin(bin_file).hess
+    calc = point_generator(q, E, grad, H)
+    calc.write_point(outname)
+    if __name__ == "__main__" and (calc.frequencies[0] < 0):
+        print(" Imaginary frequencies found!")
+    elif __name__ == "__main__":
+        print("")
 
 
 if __name__ == "__main__":
