@@ -6,8 +6,29 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from time import sleep
 
-class DirNotEmpty(Exception):
+# Maximum time ot wait for TC (seconds)
+CONMAN_MAX_WAIT_TIME=60*10
+
+CONMAN_WAIT_TIME_INTERVAL=5 # (in seconds)
+
+class ConManException(Exception):
     pass
+
+class DirNotEmpty(ConManException):
+    def __str__(self):
+        return 'Working directory not empty'
+
+class BrokenOutput(ConManException):
+    def __init__(self,context):
+        self.context = context
+        self.message = f'Broken TC output, last line(s):\n{context}'
+        super().__init__(self.message)
+
+class WaitingTimeOut(ConManException):
+    def __str__(self):
+        return f'Maximum wait time reached ({CONMAN_MAX_WAIT_TIME} s)'
+
+
 
 @dataclass
 class SbatchManager:
@@ -52,16 +73,26 @@ class SbatchManager:
         print(printout)
         self.jobId = printout.split()[-1]
 
-    def wait_for_job(self, extra_time=4):
+    def wait_for_job(self):
         # Waits for a job to finish. Consider setting sbatch dependencies instead.
-        done = False
-        while not done:
-            if os.path.exists("tc.out") or os.path.exists(f"slurm-{self.jobId}.out"):
-                done = True
+        wait_time=0
+        while True:
+            wait_time += CONMAN_WAIT_TIME_INTERVAL
+            sleep(CONMAN_WAIT_TIME_INTERVAL)
+            if os.path.exists("tc.out"):
+                final_lines=open("tc.out").readlines()[-3:]
+                # Did the job *actually* finish?
+                if any(['Job finished' in line for line in final_lines]):
+                    print("Found output!")
+                    break
+                elif CONMAN_WAIT_TIME_INTERVAL > CONMAN_MAX_WAIT_TIME:
+                    raise BrokenOutput(''.join(final_lines[:]))
+                else:
+                    "Output exists, job unfinished.  Waiting.."
+            elif CONMAN_WAIT_TIME_INTERVAL > CONMAN_MAX_WAIT_TIME:
+                raise  WaitingTimeOut()
             else:
-                sleep(5)
-        print("Found output!")
-        sleep(extra_time)
+                pass
 
 @contextmanager
 def minimal_context(newDir, tc_input, sbatch_input):
@@ -84,7 +115,7 @@ def minimal_context(newDir, tc_input, sbatch_input):
 def enter_dir(dir):
     origDir = os.getcwd()
     if not dir.exists():
-        raise Exception("directory does not exits")
+        raise Exception("directory does not exist")
     os.chdir(os.path.expanduser(dir))
     try:
         yield
