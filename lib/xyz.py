@@ -3,6 +3,7 @@ import numpy as np
 import os.path
 from dataclasses import dataclass
 from typing import List
+from rodrigues_rot import rodrigues
 
 @dataclass
 class Geometry:
@@ -48,6 +49,18 @@ class Geometry:
     @property
     def num_atoms(self):
         return self.numAtoms
+
+    def rot_bond(self,rot_atoms,a1,a2,angle):
+        """Rotate ROT_ATOMS along A1-A2 axis by ANGLE.
+
+        ROT_ATOMS is an array of index values of atoms to rotate.
+        A1, A2 are atom index values defining the axis of rotation.
+        ANGLE is in radians.
+        """
+        axis=self.coords[a2] - self.coords[a1]
+
+        for i in rot_atoms:
+            self.coords[i] = rodrigues(self.coords[i],axis,angle)
 
 @dataclass
 class combinedGeoms:
@@ -97,5 +110,3 @@ class combinedGeoms:
         with open(filename, "w") as f:
             for g in self.geometries:
                 g._write_into_file(f)
-
-
