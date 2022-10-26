@@ -117,18 +117,19 @@ class Pes:
         return 1 / (LEVEL_SHIFT + np.power(np.sum(np.power(z1 - z2, global_vars.WEIGHTING_PARAM)), 1 / global_vars.WEIGHTING_PARAM))
 
     def eval_point_geom(self, geom: xyz.Geometry):
-        inv_dist = Pes_Point.calc_inv_dist(geom.coords.reshape(-1))
-        weights = []
-        energies = []
-        for i in self.point_list:
-            weights.append(self.weight(i.inv_dist, inv_dist))
-            energies.append(i.taylor_approx(inv_dist))
-        weights = np.array(weights)
-        energies = np.array(energies)
-        weights = weights/np.sum(weights)
-        return np.dot(weights,energies)
+        """Return Energy for a given GEOMetry.
+
+        GEOM must be an instance of xyz.Geometry.
+
+        """
+        return self.eval_point(geom.coords.reshape(-1))
 
     def eval_point(self, coords):
+        """Return Energy for given COORDS.
+
+        COORDS should be a 1D array of cartesian geometries.
+
+        """
         inv_dist = Pes_Point.calc_inv_dist(coords)
         weights = []
         energies = []
@@ -136,10 +137,8 @@ class Pes:
             weights.append(self.weight(i.inv_dist, inv_dist))
             energies.append(i.taylor_approx(inv_dist))
         weights = np.array(weights)
-        #print(weights)
         energies = np.array(energies)
         weights = weights/np.sum(weights)
-        #print(weights)
         return np.dot(weights,energies)
 
     def eval_gradient(self, coords):
