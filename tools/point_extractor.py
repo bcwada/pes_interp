@@ -47,7 +47,6 @@ def point_from_files(log_file,xyz_file,bin_file,outname):
     All arguments are expected to be path-like objects.
 
     """
-    outname=output_dir/path.basename(filename)
     if not path.exists(xyz_file):
         raise Exception("missing xyz file: {}".format(xyz_file))
     elif not path.exists(bin_file):
