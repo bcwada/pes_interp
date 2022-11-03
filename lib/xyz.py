@@ -3,7 +3,7 @@ import numpy as np
 import os.path
 from dataclasses import dataclass
 from typing import List
-from rodrigues_rot import rodrigues
+from .rodrigues_rot import rodrigues
 
 @dataclass
 class Geometry:
