@@ -189,7 +189,9 @@ class Exact_Grad:
         returns a function that will calculate z given the 1D coords (atom1x,atom1y,atom1z,atom2x...)
         eq. 3.4
         """
-        pass
+        def inv_hessian(one_d_coords):
+            pass
+        return inv_hessian
 
 @dataclass
 class numerical_grad:

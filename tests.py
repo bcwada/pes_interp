@@ -109,7 +109,7 @@ class grads_test(unittest.TestCase):
         self.sympy_grads = grads.Sympy_Grad(num_atoms_BuH)
         self.exact_grads = grads.Exact_Grad(num_atoms_BuH)
 
-    def test_inv_dist_1(self):
+    def test_inv_dist_0(self):
         test_path = Path("./test/sheppard_pes/BuH.test.small_disp.xyz")
         test_geom = xyz.Geometry.from_file(test_path)
         one_d_geom = test_geom.coords.reshape(-1)
@@ -117,13 +117,30 @@ class grads_test(unittest.TestCase):
         ext_z = self.exact_grads.calc_inv_dist(one_d_geom)
         self.assertTrue(np.allclose(sym_z, ext_z))
 
-    def test_inv_dist_2(self):
+    def test_inv_dist_1(self):
         test_path = Path("./test/sheppard_pes/BuH.xyz")
         test_geom = xyz.Geometry.from_file(test_path)
         one_d_geom = test_geom.coords.reshape(-1)
         sym_z = self.sympy_grads.calc_inv_dist(one_d_geom)
         ext_z = self.exact_grads.calc_inv_dist(one_d_geom)
         self.assertTrue(np.allclose(sym_z, ext_z))
+    
+    def test_inv_jacobian_0(self):
+        test_path = Path("./test/sheppard_pes/BuH.xyz")
+        test_geom = xyz.Geometry.from_file(test_path)
+        one_d_geom = test_geom.coords.reshape(-1)
+        sym_z = self.sympy_grads.calc_inv_jacobian(one_d_geom)
+        ext_z = self.exact_grads.calc_inv_jacobian(one_d_geom)
+        embed()
+        # self.assertTrue(np.allclose(sym_z, ext_z))
+
+    def test_inv_jacobian_1(self):
+        test_path = Path("./test/sheppard_pes/BuH.test.small_disp.xyz")
+        test_geom = xyz.Geometry.from_file(test_path)
+        one_d_geom = test_geom.coords.reshape(-1)
+        sym_z = self.sympy_grads.calc_inv_jacobian(one_d_geom)
+        ext_z = self.exact_grads.calc_inv_jacobian(one_d_geom)
+        # self.assertTrue(np.allclose(sym_z, ext_z))
 
 if __name__ == "__main__":
     # probably want to comment the following line out after running once
