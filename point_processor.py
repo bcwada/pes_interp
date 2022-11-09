@@ -15,7 +15,7 @@ class point_generator:
     grad: np.array
     hess: np.array
 
-    grad_source = Sympy_Grad.initialize(global_vars.NUM_ATOMS)
+    grad_source = Sympy_Grad(global_vars.NUM_ATOMS)
 
     @cached_property
     def inv_dist(self):

@@ -20,16 +20,22 @@ class Sympy_Grad:
     symb: sympy.Array
     funcs: dict
 
-    @classmethod
-    def initialize(cls, natoms):
-        """
-        Initialize the class for a fixed number of atoms NATOMS.
-
-        This initializes an array of symbols used for sympy's computer
-        algebra.
-        """
+    def __init__(self, natoms):
         symb = sympy.Array(sympy.symbols(f"x:{natoms * 3}"))
-        return cls(natoms,symb,{})
+        self.num_atoms =  natoms
+        self.symb = symb
+        self.funcs = {}
+
+    # @classmethod
+    # def initialize(cls, natoms):
+    #     """
+    #     Initialize the class for a fixed number of atoms NATOMS.
+
+    #     This initializes an array of symbols used for sympy's computer
+    #     algebra.
+    #     """
+    #     symb = sympy.Array(sympy.symbols(f"x:{natoms * 3}"))
+    #     return cls(natoms,symb,{})
 
     @staticmethod
     def dist(symb,i,j):
@@ -136,6 +142,54 @@ class Sympy_Grad:
             unpack = lambda x: np.array(func(*x))
             self.funcs["calc_b2"] = unpack
             return unpack
+
+@dataclass
+class Exact_Grad:
+    """
+    Functions for inverse distances, gradients and hessian
+    Should be identical to Sympy_Grad except faster to initialize
+    (with one small caviat, that the returned functions here are tied
+    to the object while Sympy_Grad actually returns a new function)
+    """
+    num_atoms: int
+
+    @property
+    def calc_inv_dist(self):
+        """
+        returns a function that will calculate z given the 1D coords (atom1x,atom1y,atom1z,atom2x...)
+        """
+        def inv_dist(one_d_coords):
+            num_dists = (self.num_atoms*(self.num_atoms-1))//2
+            z = np.zeros(num_dists)
+            z_ind = 0
+            for i in range(self.num_atoms):
+                for j in range(i+1,self.num_atoms):
+                    delx = one_d_coords[3*i+0] - one_d_coords[3*j+0]
+                    dely = one_d_coords[3*i+1] - one_d_coords[3*j+1]
+                    delz = one_d_coords[3*i+2] - one_d_coords[3*j+2]
+                    dist = np.sqrt(np.power(delx,2)+np.power(dely,2)+np.power(delz,2))
+                    z[z_ind] = dist
+                    z_ind += 1
+            return 1/z
+        return inv_dist
+    
+    @property
+    def calc_inv_jacobian(self):
+        """
+        returns a function that will calculate B given the 1D coords (atom1x,atom1y,atom1z,atom2x...)
+        eq. 3.3
+        """
+        def inv_jacobian(one_d_coords):
+            pass
+        return inv_jacobian
+
+    @property
+    def calc_inv_hessian(self):
+        """
+        returns a function that will calculate z given the 1D coords (atom1x,atom1y,atom1z,atom2x...)
+        eq. 3.4
+        """
+        pass
 
 @dataclass
 class numerical_grad:

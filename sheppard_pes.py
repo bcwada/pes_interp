@@ -23,7 +23,7 @@ class Pes_Point:
     freqs: np.array
     transform_matrix: np.array
 
-    grads_source = Sympy_Grad.initialize(global_vars.NUM_ATOMS)
+    grads_source = Sympy_Grad(global_vars.NUM_ATOMS)
     calc_inv_dist = grads_source.calc_inv_dist
 
     @classmethod
@@ -145,87 +145,4 @@ class Pes:
         return numerical_grad.grad_2pt(self.eval_point, coords)
 
 if __name__ == "__main__":
-    print("testing pes")
-
-    path = Path("./test/sheppard_pes/BuH.xyz")
-    g = xyz.Geometry.from_file(path)
-    # artificial potential function puts a harmonic potential on all interatomic distances
-    def pseudo(coords):
-        ref = Pes_Point.calc_inv_dist(g.coords.reshape(-1))
-        z = Pes_Point.calc_inv_dist(coords)
-        v = z - ref
-        return 0.5 * np.dot(v,v)
-
-    def point_test(path, pes):
-        name = path.absolute().name
-        test_geom = xyz.Geometry.from_file(test_path)
-        print("\n")
-        print(f"running test with {name}")
-        print(f"evaluated pseudo at test: {pseudo(test_geom.coords.reshape(-1))}")
-        e = pes.eval_point(test_geom.coords.reshape(-1))
-        print(f"evaluated sheppard at test: {e}")
-        print("\n")
-
-    # construct artificial hessian for testing purpose using artificial potential function
-
-    # print("calculating numerical Hessian")
-    # H = numerical_grad.hess_2pt(pseudo, g.coords.reshape(-1))
-    # print("calculated numerical Hessian")
-
-    # calc = point_generator(g, 0, np.zeros(42), H)
-    # calc.write_point("./test/sheppard_pes/BuH.out")
-
-    print("Energy Test 0: get energy back at same point")
-    pes = Pes.new_pes()
-    pes.add_point("./test/sheppard_pes/BuH.out", symmeterize=False)
-    test_path = Path("./test/sheppard_pes/BuH.xyz")
-    point_test(test_path, pes)
-
-    print("symmeterized at min")
-    pes = Pes.new_pes()
-    pes.add_point("./test/sheppard_pes/BuH.out", symmeterize=True)
-    point_test(test_path, pes)
-
-    print("Energy Test 1: single point")
-    pes = Pes.new_pes()
-    pes.add_point("./test/sheppard_pes/BuH.out", symmeterize=False)
-    test_path = Path("./test/sheppard_pes/BuH.test.small_disp.xyz")
-    point_test(test_path, pes)
-
-    test_path = Path("./test/sheppard_pes/BuH.test.large_disp.xyz")
-    point_test(test_path, pes)
-
-    test_path = Path("./test/sheppard_pes/BuH.test.large_disp.xyz")
-    test_geom = xyz.Geometry.from_file(test_path)
-    print("\n")
-    print("Gradient Test 1")
-    print(f"pseudo potential numerical grad: {numerical_grad.grad_2pt(pseudo,test_geom.coords.reshape(-1))}")
-    print(f"pes numerical grad: {pes.eval_gradient(test_geom.coords.reshape(-1))}")
-    print("\n")
-#
-    print("Energy Test 2: single point")
-    pes = Pes.new_pes()
-    pes.add_point("./test/sheppard_pes/BuH.out")
-    test_path = Path("./test/sheppard_pes/BuH.test.small_disp.xyz")
-    test_geom = xyz.Geometry.from_file(test_path)
-    print(f"evaluated pseudo at test: {pseudo(test_geom.coords.reshape(-1))}")
-    e = pes.eval_point(test_geom.coords.reshape(-1))
-    print(f"evaluated sheppard at test: {e}")
-
-
-
-    # need to fix this for better test
-    #global_vars.NUM_ATOMS = 4
-
-    #path = Path("./test/sheppard_pes/c4.xyz")
-    #g = xyz.Geometry.from_file(path)
-    #calc = point_generator(g, 0, np.zeros(12), np.ones((12,12)))
-    #calc.write_point("./test/sheppard_pes/c4.out")
-
-    #pes = Pes.new_pes()
-    #pes.add_point("./test/sheppard_pes/c4.out")
-
-    #test_path = Path("./test/sheppard_pes/c4.test.2.xyz")
-    #test_geom = xyz.Geometry.from_file(test_path)
-    #e = pes.eval_point(test_geom)
-    #print(e)
+    pass
