@@ -6,7 +6,7 @@ import os
 
 import lib.xyz as xyz
 import global_vars
-from grads import Sympy_Grad
+from grads import Exact_Grad
 
 @dataclass
 class point_generator:
@@ -15,7 +15,7 @@ class point_generator:
     grad: np.array
     hess: np.array
 
-    grad_source = Sympy_Grad(global_vars.NUM_ATOMS)
+    grad_source = Exact_Grad(global_vars.NUM_ATOMS)
 
     @cached_property
     def inv_dist(self):
@@ -151,6 +151,7 @@ class point_generator:
             for i in self.m.reshape(-1):
                 f.write(str(i) + " ")
             f.write("\n")
+
 
 
 if __name__ == "__main__":

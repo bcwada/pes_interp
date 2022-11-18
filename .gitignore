@@ -1,6 +1,7 @@
 # a running TODO list for my sake
 TODO.txt
 export.sh
+.vscode
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
