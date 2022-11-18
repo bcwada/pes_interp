@@ -153,6 +153,107 @@ class Exact_Grad:
     """
     num_atoms: int
 
+    def distance(self, one_d_coords: np.array, atom1: int, atom2: int) -> float:
+        delx = one_d_coords[3*atom1+0] - one_d_coords[3*atom2+0]
+        dely = one_d_coords[3*atom1+1] - one_d_coords[3*atom2+1]
+        delz = one_d_coords[3*atom1+2] - one_d_coords[3*atom2+2]
+        dist = np.sqrt(np.power(delx,2)+np.power(dely,2)+np.power(delz,2))
+        return dist
+
+    def sum_squares_first_deriv(self, one_d_coords: np.array, atom1: int, atom2: int, deriv_coord: int) -> float:
+        deriv_atom = deriv_coord//3
+        deriv_cartesian = deriv_coord%3
+        if deriv_atom == atom1:
+            return 2*(one_d_coords[deriv_coord] - one_d_coords[3*atom2+deriv_cartesian])
+        elif deriv_atom == atom2:
+            return 2*(one_d_coords[deriv_coord] - one_d_coords[3*atom1+deriv_cartesian])
+        else:
+            return 0
+
+    def first_derivative(self, one_d_coords: np.array, atom1: int, atom2: int, deriv_coord: int) -> float:
+        """
+        calculates the first derivative of the distance between atom1 and atom2
+
+            Args:
+                atom1: the index of atom1
+                atom2: the index of atom2
+                deriv_coord: the index of the coordinate which we will take the derivative with respect to
+                    (i.e. x_1 -> 0, y_1 -> 1, x_1 -> 3, etc.)
+
+            Returns:
+                an (n choose 2) x 3n np.array representing the Jacobian
+        """
+        prod1 = -(1/2)*np.power(self.distance(one_d_coords, atom1, atom2),-3)
+        prod2 = self.sum_squares_first_deriv(one_d_coords, atom1, atom2, deriv_coord)
+        return prod1*prod2
+    
+    def first_derivative_alt(self, one_d_coords: np.array, atom1: int, atom2: int, deriv_coord: int) -> float:
+        """
+        calculates the first derivative of the distance between atom1 and atom2
+
+            Args:
+                atom1: the index of atom1
+                atom2: the index of atom2
+                deriv_coord: the index of the coordinate which we will take the derivative with respect to
+                    (i.e. x_1 -> 0, y_1 -> 1, x_1 -> 3, etc.)
+
+            Returns:
+                an (n choose 2) x 3n np.array representing the Jacobian
+        """
+        deriv_atom = deriv_coord//3
+        deriv_cartesian = deriv_coord%3
+        prod1 = -(1/2)*np.power(self.distance(one_d_coords, atom1, atom2),-3)
+        if deriv_atom == atom1:
+            prod2 = 2*(one_d_coords[deriv_coord] - one_d_coords[3*atom2+deriv_cartesian])
+            return prod1*prod2
+        elif deriv_atom == atom2:
+            prod2 = 2*(one_d_coords[deriv_coord] - one_d_coords[3*atom1+deriv_cartesian])
+            return prod1*prod2
+        else:
+            return 0
+    
+
+    def second_derivative(self, one_d_coords: np.array, atom1, atom2, deriv_coord_1, deriv_coord_2):
+        """
+        calculates the first derivative of the distance between atom1 and atom2
+
+            Args:
+                atom1: the index of atom1
+                atom2: the index of atom2
+                deriv_coord_1: the index of the coordinate which we will take the first derivative with respect to (derivatives should commute here)
+                    (i.e. x_1 -> 0, y_1 -> 1, x_1 -> 3, etc.)
+                deriv_coord_2: the index of the coordinate which we will take the second derivative with respect to (derivatives should commute here)
+
+            Returns:
+                an (n choose 2) x 3n x 3n np.array representing the Hessian
+
+        """
+        deriv_atom_1 = deriv_coord_1//3
+        deriv_atom_2 = deriv_coord_2//3
+        deriv_cartesian_1 = deriv_coord_1%3
+        deriv_cartesian_2 = deriv_coord_2%3
+        if deriv_atom_1 != atom1 and deriv_atom_1 != atom2:
+            return 0
+        elif deriv_atom_2 != atom1 and deriv_atom_2 != atom2:
+            return 0
+
+        term1 = (3/4)*np.power(self.distance(one_d_coords,atom1,atom2),-5)
+        term1 *= self.sum_squares_first_deriv(one_d_coords, atom1, atom2, deriv_coord_1)
+        term1 *= self.sum_squares_first_deriv(one_d_coords, atom1, atom2, deriv_coord_2)
+
+        term2 = -(1/2)*np.power(self.distance(one_d_coords,atom1,atom2),-3)
+        # the second derivative of the sum of square differences between coordinates
+        ss_2_deriv = None
+        if deriv_coord_1 == deriv_coord_2:
+            ss_2_deriv = 2
+        elif deriv_cartesian_1 != deriv_cartesian_2:
+            ss_2_deriv = 0
+        else:
+            ss_2_deriv = -2
+        term2 = term2*ss_2_deriv
+        
+        return term1 + term2
+
     @property
     def calc_inv_dist(self):
         """
@@ -180,7 +281,33 @@ class Exact_Grad:
         eq. 3.3
         """
         def inv_jacobian(one_d_coords):
-            pass
+            num_dists = (self.num_atoms*(self.num_atoms-1))//2
+            inv_jacobian = np.zeros((num_dists,len(one_d_coords)))
+            dist_index = 0
+            for i in range(self.num_atoms):
+                for j in range(i+1, self.num_atoms):
+                    for k in range(len(one_d_coords)):
+                        inv_jacobian[dist_index,k] = self.first_derivative(one_d_coords, i, j, k)
+                    dist_index += 1
+            return inv_jacobian
+        return inv_jacobian
+
+    @property
+    def calc_inv_jacobian_alt(self):
+        """
+        returns a function that will calculate B given the 1D coords (atom1x,atom1y,atom1z,atom2x...)
+        eq. 3.3
+        """
+        def inv_jacobian(one_d_coords):
+            num_dists = (self.num_atoms*(self.num_atoms-1))//2
+            inv_jacobian = np.zeros((num_dists,len(one_d_coords)))
+            dist_index = 0
+            for i in range(self.num_atoms):
+                for j in range(i+1, self.num_atoms):
+                    for k in range(len(one_d_coords)):
+                        inv_jacobian[dist_index,k] = self.first_derivative_alt(one_d_coords, i, j, k)
+                    dist_index += 1
+            return inv_jacobian
         return inv_jacobian
 
     @property
@@ -190,7 +317,16 @@ class Exact_Grad:
         eq. 3.4
         """
         def inv_hessian(one_d_coords):
-            pass
+            num_dists = (self.num_atoms*(self.num_atoms-1))//2
+            inv_hessian = np.zeros((num_dists,len(one_d_coords),len(one_d_coords)))
+            dist_index = 0
+            for i in range(self.num_atoms):
+                for j in range(i+1,self.num_atoms):
+                    for k in range(len(one_d_coords)):
+                        for l in range(len(one_d_coords)):
+                            inv_hessian[dist_index,k,l] = self.second_derivative(one_d_coords,i,j,k,l)
+                    dist_index += 1
+            return inv_hessian
         return inv_hessian
 
 @dataclass

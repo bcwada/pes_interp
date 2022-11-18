@@ -3,6 +3,7 @@ from IPython import embed
 import numpy as np
 import unittest
 from pathlib import Path
+import time
 
 import sheppard_pes as sheppard
 import grads
@@ -131,8 +132,7 @@ class grads_test(unittest.TestCase):
         one_d_geom = test_geom.coords.reshape(-1)
         sym_z = self.sympy_grads.calc_inv_jacobian(one_d_geom)
         ext_z = self.exact_grads.calc_inv_jacobian(one_d_geom)
-        embed()
-        # self.assertTrue(np.allclose(sym_z, ext_z))
+        self.assertTrue(np.allclose(sym_z, ext_z))
 
     def test_inv_jacobian_1(self):
         test_path = Path("./test/sheppard_pes/BuH.test.small_disp.xyz")
@@ -140,9 +140,54 @@ class grads_test(unittest.TestCase):
         one_d_geom = test_geom.coords.reshape(-1)
         sym_z = self.sympy_grads.calc_inv_jacobian(one_d_geom)
         ext_z = self.exact_grads.calc_inv_jacobian(one_d_geom)
-        # self.assertTrue(np.allclose(sym_z, ext_z))
+        self.assertTrue(np.allclose(sym_z, ext_z))
+
+class hessian_test(unittest.TestCase):
+
+    def setUp(self) -> None:
+        num_atoms_BuH = 14
+        self.sympy_grads = grads.Sympy_Grad(num_atoms_BuH)
+        self.exact_grads = grads.Exact_Grad(num_atoms_BuH)
+
+    def test_inv_hessian_0(self):
+        test_path = Path("./test/sheppard_pes/BuH.xyz")
+        test_geom = xyz.Geometry.from_file(test_path)
+        one_d_geom = test_geom.coords.reshape(-1)
+        sym_z = self.sympy_grads.calc_inv_hessian(one_d_geom)
+        ext_z = self.exact_grads.calc_inv_hessian(one_d_geom)
+        self.assertTrue(np.allclose(sym_z, ext_z))
+
+    def test_inv_hessian_1(self):
+        test_path = Path("./test/sheppard_pes/BuH.test.small_disp.xyz")
+        test_geom = xyz.Geometry.from_file(test_path)
+        one_d_geom = test_geom.coords.reshape(-1)
+        sym_z = self.sympy_grads.calc_inv_hessian(one_d_geom)
+        ext_z = self.exact_grads.calc_inv_hessian(one_d_geom)
+        self.assertTrue(np.allclose(sym_z, ext_z))
+
+class timings():
+    def time_inv_jacobian(self):
+        num_atoms_BuH = 14
+        self.exact_grads = grads.Exact_Grad(num_atoms_BuH)
+
+        test_path = Path("./test/sheppard_pes/BuH.test.small_disp.xyz")
+        test_geom = xyz.Geometry.from_file(test_path)
+        one_d_geom = test_geom.coords.reshape(-1)
+        v1_start = time.time()
+        ext_v1 = self.exact_grads.calc_inv_jacobian(one_d_geom)
+        mid = time.time()
+        ext_v2 = self.exact_grads.calc_inv_jacobian_alt(one_d_geom)
+        v2_start = time.time()
+        assert(np.allclose(ext_v1, ext_v2))
+        print(f"v1 time: {v1_start-mid}")
+        print(f"v2 time: {mid-v2_start}")
+
 
 if __name__ == "__main__":
     # probably want to comment the following line out after running once
     # generate_test_files.generate_all()
+
+    #timing = timings() 
+    #timing.time_inv_jacobian()
+
     unittest.main()
