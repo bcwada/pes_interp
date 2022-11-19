@@ -4,6 +4,7 @@ import os.path
 from dataclasses import dataclass
 from typing import List
 from math import cos, sin
+from scipy.spatial.transform import Rotation as R
 
 def rodrigues(pos,axis,angle):
     """Rotates a point POS around AXIS by ANGLE and returns.
@@ -17,7 +18,7 @@ def rodrigues(pos,axis,angle):
 
     axis=axis/np.linalg.norm(axis)
 
-    pos_proj=np.dot(axis,pos)*axis
+    pos_proj=np.dot(axis,pos)*axis # This is not a vector
     pos_orth=np.cross(axis,pos)
 
     return pos*cos(angle) + pos_orth*sin(angle) + pos_proj*(1-cos(angle))
@@ -68,7 +69,7 @@ class Geometry:
     def num_atoms(self):
         return self.numAtoms
 
-    def rot_bond(self,rot_atoms,a1,a2,angle):
+    def rot_bond_rodrigues(self,rot_atoms,a1,a2,angle):
         """Rotate ROT_ATOMS along A1-A2 axis by ANGLE.
 
         ROT_ATOMS is an array of index values of atoms to rotate.
@@ -79,6 +80,17 @@ class Geometry:
 
         for i in rot_atoms:
             self.coords[i] = rodrigues(self.coords[i],axis,angle)
+
+    def bond_rot(self, angle, bond_atoms, rot_atoms):
+        #rotate all the atoms given as indices in rot_atoms counterclockwise around the vector from bond_atoms[0] to bond_atoms[1]
+        shift_vec = self.coords[bond_atoms[0]]
+        self.coords = self.coords-shift_vec
+        rot_vec = self.coords[bond_atoms[1]]/np.linalg.norm(self.coords[bond_atoms[1]])
+        rot_vec = rot_vec*np.sin(angle/2)
+        r = R.from_quat([rot_vec[0],rot_vec[1],rot_vec[2],np.cos(angle/2)])
+        for i in rot_atoms:
+            self.coords[i] = r.apply(self.coords[i])
+        self.coords = self.coords+shift_vec
 
 @dataclass
 class combinedGeoms:

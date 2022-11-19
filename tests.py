@@ -46,8 +46,9 @@ class generate_test_files:
         num_points = 36
         rot_ang = np.pi * 2 * (1 / num_points)
         for i in range(num_points):
-            g.rot_bond([2, 3, 9, 10, 11, 12, 13], 1, 2, rot_ang)
+            g.bond_rot(rot_ang, (1, 2), [3, 9, 10, 11, 12, 13])
             g.write_file(f"./test/generated_files/torsion_{i}.xyz")
+
 
     @classmethod
     def generate_all(cls):
