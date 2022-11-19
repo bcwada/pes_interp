@@ -9,6 +9,7 @@ import sheppard_pes as sheppard
 import grads
 import lib.xyz as xyz
 import point_processor
+import lib.context_manager as conman
 
 
 class common_test_funcs:
@@ -23,6 +24,9 @@ class common_test_funcs:
 
 
 class generate_test_files:
+
+    BuH_torsion_num_points = 36
+
     @classmethod
     def generate_BuH_pseudo(cls):
         """
@@ -43,12 +47,23 @@ class generate_test_files:
         """
         path = Path("./test/test_files/BuH.xyz")
         g = xyz.Geometry.from_file(path)
-        num_points = 36
-        rot_ang = np.pi * 2 * (1 / num_points)
-        for i in range(num_points):
+        rot_ang = np.pi * 2 * (1 / cls.BuH_torsion_num_points)
+        for i in range(cls.BuH_torsion_num_points):
             g.bond_rot(rot_ang, (1, 2), [3, 9, 10, 11, 12, 13])
             g.write_file(f"./test/generated_files/torsion_{i}.xyz")
 
+    @classmethod
+    def generate_tc_BuH_torsion(cls):
+        """
+        run Terachem on the BuH torsion angle scan
+        """
+        g = xyz.Geometry.from_file(f"./test/generated_files/torsion_{i}.xyz")
+        for i in range(cls.BuH_torsion_num_points):
+            with conman.minimal_context(f"./test/generated_files/torsion_{i}","./test/tc_files/tc.in","./test/tc_files/sbatch.sh") as man:
+                g.write_file("geom.xyz")
+                man.launch()
+                man.wait_for_job()
+            
 
     @classmethod
     def generate_all(cls):
