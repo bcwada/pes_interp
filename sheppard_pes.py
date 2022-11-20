@@ -95,11 +95,14 @@ class Pes:
         return Pes([])
 
     @classmethod
-    def pes_from_folder(cls, path):
+    def pes_from_folder(cls, path, include_ex=False):
         fold = Path(path)
         pt_list = []
         for i in fold.glob("*.pt"):
             pt_list.append(Pes_Point.from_file(i))
+        if include_ex:
+            for i in fold.glob("*.ex"):
+                pt_list.append(Pes_Point.from_file(i))
         return cls(pt_list)
 
     def add_point(self, path, symmeterize=True):

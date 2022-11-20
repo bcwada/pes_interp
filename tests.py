@@ -83,7 +83,7 @@ class generate_test_files:
         tc_data = [tc.gradient.from_file(Path(f"./test/generated_files/torsion_{i}/tc.out")) for i in range(cls.BuH_torsion_num_points)]
         y_tc = [i.energy for i in tc_data]
         f, ax = plt.subplots(1,1)
-        ax.scatter(x_ax,y_tc,marker="x",color="r")
+        #ax.scatter(x_ax,y_tc,marker="x",color="r")
         test_pes = sheppard.Pes.pes_from_folder(path)
         geom_files = [Path(f"./test/generated_files/torsion_{i}/geom.xyz") for i in range(cls.BuH_torsion_num_points)]
         geoms = [xyz.Geometry.from_file(f) for f in geom_files]
