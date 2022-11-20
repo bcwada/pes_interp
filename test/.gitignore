@@ -1,1 +1,3 @@
-generated_files/*
+generated_files/*.pt
+generated_files/*.xyz
+generated_files/*/scr.geom

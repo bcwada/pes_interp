@@ -103,9 +103,9 @@ def minimal_context(newDir, tc_input, sbatch_input):
     else:
         newDir.mkdir(parents=True)
     try:
-        os.chdir(os.path.expanduser(newDir))
         shutil.copy(tc_input, newDir)
         shutil.copy(sbatch_input, newDir)
+        os.chdir(os.path.expanduser(newDir))
         yield SbatchManager.setup("sbatch.sh")
         #yield RunManager.create_manager(tc_file_name, sbatch_file_name, extra_files, debug)
     finally:

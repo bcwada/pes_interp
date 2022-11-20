@@ -1,0 +1,9 @@
+This terachem is tested against
+test-suite/0dce7d928a518bbf281c1fa3c82867b599562211. The following tests were
+NOT passed: CASSCF_Fms90/restart, all DRF2ePol, DWS_CASSCF_Fms90/restart, all
+FragmentBox, InitialGuess/frag_spec,project_*. If you intend to use these
+features, please do not use this module.
+
+Also do not use DFT together with minimization, you'll get garbage result. It's
+fixed in new modules.
+

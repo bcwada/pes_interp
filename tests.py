@@ -62,13 +62,13 @@ class generate_test_files:
         """
         run Terachem on the BuH torsion angle scan
         """
-        g = xyz.Geometry.from_file(f"./test/generated_files/torsion_{i}.xyz")
         for i in range(cls.BuH_torsion_num_points):
-            with conman.minimal_context(f"./test/generated_files/torsion_{i}","./test/tc_files/tc.in","./test/tc_files/sbatch.sh") as man:
+            g = xyz.Geometry.from_file(f"./test/generated_files/torsion_{i}.xyz")
+            with conman.minimal_context(Path(f"./test/generated_files/torsion_{i}"),"./test/tc_files/tc.in","./test/tc_files/sbatch.sh") as man:
                 g.write_file("geom.xyz")
                 man.launch()
                 man.wait_for_job()
-            
+
 
     @classmethod
     def generate_all(cls):
