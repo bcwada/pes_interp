@@ -24,7 +24,7 @@ class gradient:
         with open(path) as f:
             for line in f:
                 if match := energy_re.search(line):
-                    energy = match[1]
+                    energy = float(match[1])
                 if found_header:
                     if match := grad_re.search(line):
                         grad.append([float(match[1]),float(match[2]),float(match[3])])

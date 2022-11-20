@@ -1,4 +1,3 @@
-generate terachem outputs along the torsional scan
 get thermostat dynamics data
 generate reference plot
 classify dynamics data

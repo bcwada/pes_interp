@@ -5,9 +5,13 @@ import unittest
 from pathlib import Path
 import time
 
+import matplotlib
+import matplotlib.pyplot as plt
+
 import sheppard_pes as sheppard
 import grads
 import lib.xyz as xyz
+import lib.tc_reader as tc
 import point_processor
 import lib.context_manager as conman
 
@@ -26,6 +30,7 @@ class common_test_funcs:
 class generate_test_files:
 
     BuH_torsion_num_points = 36
+    output_folder = Path("./test/generated_files")
 
     @classmethod
     def generate_folders(cls):
@@ -68,6 +73,23 @@ class generate_test_files:
                 g.write_file("geom.xyz")
                 man.launch()
                 man.wait_for_job()
+
+    @classmethod
+    def generate_torsion_plot(cls, path):
+        """
+        generates a plot of the torsion PES
+        """
+        x_ax = 2*np.pi*np.array(range(cls.BuH_torsion_num_points))/cls.BuH_torsion_num_points
+        tc_data = [tc.gradient.from_file(Path(f"./test/generated_files/torsion_{i}/tc.out")) for i in range(cls.BuH_torsion_num_points)]
+        y_tc = [i.energy for i in tc_data]
+        f, ax = plt.subplots(1,1)
+        ax.scatter(x_ax,y_tc,marker="x",color="r")
+        test_pes = sheppard.Pes.pes_from_folder(path)
+        geom_files = [Path(f"./test/generated_files/torsion_{i}/geom.xyz") for i in range(cls.BuH_torsion_num_points)]
+        geoms = [xyz.Geometry.from_file(f) for f in geom_files]
+        y_shep = [test_pes.eval_point_geom(g) for g in geoms]
+        ax.plot(x_ax, y_shep)
+        f.savefig("./test/generated_files/test_fig.png")
 
 
     @classmethod
@@ -233,6 +255,11 @@ def parse():
         action="store_true",
         help="generate the files necessary for testing",
     )
+    args.add_argument(
+        "--make_plot",
+        type=Path,
+        help="makes test plot of PES along BuH torsion scan using the pt files in the given path",
+    )
     args.add_argument("-t", "--timings", action="store_true", help="run timing tests")
     args.add_argument("-u", "--unittest", action="store_true", help="perform unittests")
     args = args.parse_args()
@@ -252,6 +279,8 @@ def main():
         # the tests require are greater than what we should reasonbly expect, but I'm leaving the
         # tests as failing because they're a great reminder later that  we may just run into a precision issue
         unittest.main()
+    if args.make_plot is not None:
+        generate_test_files.generate_torsion_plot(args.make_plot)
 
 
 if __name__ == "__main__":
