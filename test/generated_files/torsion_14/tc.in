@@ -1,9 +1,12 @@
 spinmult 1
 charge 0
-basis           def2-svp
+basis           6-31Gss
 coordinates     geom.xyz
+dispersion      d3
 guess           sad
 method          b3lyp
-run             gradient
 new_minimizer   true
 xtol            0.0001
+
+run frequencies
+maxgradnorm  9999

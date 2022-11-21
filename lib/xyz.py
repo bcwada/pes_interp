@@ -18,7 +18,7 @@ def rodrigues(pos,axis,angle):
 
     axis=axis/np.linalg.norm(axis)
 
-    pos_proj=np.dot(axis,pos)*axis # This is not a vector
+    pos_proj=np.dot(axis,pos)*axis 
     pos_orth=np.cross(axis,pos)
 
     return pos*cos(angle) + pos_orth*sin(angle) + pos_proj*(1-cos(angle))

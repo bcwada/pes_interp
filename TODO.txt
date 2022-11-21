@@ -1,4 +1,6 @@
-get thermostat dynamics data
-generate reference plot
+Validate thermostat data (make sure all three wells are reached)
+Double check minimized geometry for torsions is with 6-311Gss basis minimization
+speed up PES evaluations
+
 classify dynamics data
 build ML model
