@@ -90,9 +90,12 @@ class Pes_Point:
 class Pes:
     point_list: list
 
+    def __init__(self):
+        self.point_list = []
+
     @classmethod
     def new_pes(cls):
-        return Pes([])
+        return Pes()
 
     @classmethod
     def pes_from_folder(cls, path, include_ex=False):

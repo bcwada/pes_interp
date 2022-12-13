@@ -1,6 +1,19 @@
+perform minimization automatically
+
 Validate thermostat data (make sure all three wells are reached)
-Double check minimized geometry for torsions is with 6-311Gss basis minimization
 speed up PES evaluations
+
+! check why torsion scan only returns .ex files (methyl rotation?)
+!
 
 classify dynamics data
 build ML model
+
+
+notes:
+Only including .pt files so far seems to cause the PES to overestimate, especially compared against .ex files
+
+Figure out why plots are off
+    doesn't seem to be the md sampling
+    (secondary plot has additional issue)
+        error is off by about the same amount as the large displacement tests

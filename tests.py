@@ -1,5 +1,7 @@
 import argparse
+from IPython import embed
 
+import sys
 import numpy as np
 import unittest
 from pathlib import Path
@@ -20,7 +22,7 @@ import tools.point_extractor as extract
 class common_test_funcs:
     @classmethod
     def pseudo(cls, coords):
-        path = Path("./test/test_files/BuH.xyz")
+        path = Path("./test/test_files/BuH.test.xyz")
         g = xyz.Geometry.from_file(path)
         ref = sheppard.Pes_Point.calc_inv_dist(g.coords.reshape(-1))
         z = sheppard.Pes_Point.calc_inv_dist(coords)
@@ -31,19 +33,21 @@ class common_test_funcs:
 class generate_test_files:
 
     BuH_torsion_num_points = 36
+    md_nth_geom = 100
     output_folder = Path("./test/generated_files")
+    torsion_folder = output_folder/"torsion_files"
 
     @classmethod
     def generate_folders(cls):
-        Path("./test/tc_files").mkdir(parents=True, exist_ok=True)
-        Path("./test/generated_files").mkdir(parents=True, exist_ok=True)
+        cls.output_folder.mkdir(parents=True, exist_ok=True)
+        cls.torsion_folder.mkdir(parents=True, exist_ok=True)
 
     @classmethod
     def generate_BuH_pseudo(cls):
         """
         construct artificial hessian for testing purpose using artificial potential function
         """
-        path = Path("./test/test_files/BuH.xyz")
+        path = Path("./test/test_files/BuH.test.xyz")
         g = xyz.Geometry.from_file(path)
         H = grads.numerical_grad.hess_2pt(
             common_test_funcs.pseudo, g.coords.reshape(-1)
@@ -56,12 +60,12 @@ class generate_test_files:
         """
         generates geometries around a torsion scan in BuH
         """
-        path = Path("./test/test_files/BuH.xyz")
+        path = Path("./test/test_files/BuH_anti.xyz")
         g = xyz.Geometry.from_file(path)
         rot_ang = np.pi * 2 * (1 / cls.BuH_torsion_num_points)
         for i in range(cls.BuH_torsion_num_points):
             g.bond_rot(rot_ang, (1, 2), [3, 9, 10, 11, 12, 13])
-            g.write_file(f"./test/generated_files/torsion_{i}.xyz")
+            g.write_file(cls.torsion_folder/f"torsion_{i}.xyz")
 
     @classmethod
     def generate_tc_BuH_torsion(cls):
@@ -69,8 +73,8 @@ class generate_test_files:
         run Terachem on the BuH torsion angle scan
         """
         for i in range(cls.BuH_torsion_num_points):
-            g = xyz.Geometry.from_file(f"./test/generated_files/torsion_{i}.xyz")
-            with conman.minimal_context(Path(f"./test/generated_files/torsion_{i}"),"./test/tc_files/tc.in","./test/tc_files/sbatch.sh") as man:
+            g = xyz.Geometry.from_file(cls.torsion_folder/f"torsion_{i}.xyz")
+            with conman.minimal_context(Path(cls.torsion_folder/f"torsion_{i}"),"./test/tc_files/frequencies/tc.in","./test/tc_files/frequencies/sbatch.sh") as man:
                 g.write_file("geom.xyz")
                 man.launch()
                 man.wait_for_job()
@@ -78,10 +82,10 @@ class generate_test_files:
     @classmethod
     def extract_tc_BuH_torsion(cls):
         """
-        run Terachem on the BuH torsion angle scan
+        produces the .pt and .ex files along the torsion scan 
         """
         for i in range(cls.BuH_torsion_num_points):
-            with conman.enter_dir(Path(f"./test/generated_files/torsion_{i}")):
+            with conman.enter_dir(Path(cls.torsion_folder/f"torsion_{i}")):
                 extract.point_from_files(Path("tc.out"),Path("geom.xyz"),Path("scr.geom/Hessian.bin"),Path("extracted"))
 
     @classmethod
@@ -90,14 +94,14 @@ class generate_test_files:
         generates a plot of the torsion PES
         """
         x_ax = 2*np.pi*np.array(range(cls.BuH_torsion_num_points))/cls.BuH_torsion_num_points
-        geom_files = [Path(f"./test/generated_files/torsion_{i}/geom.xyz") for i in range(cls.BuH_torsion_num_points)]
+        geom_files = [cls.torsion_folder/f"torsion_{i}/geom.xyz" for i in range(cls.BuH_torsion_num_points)]
         geoms = [xyz.Geometry.from_file(f) for f in geom_files]
         f, ax = plt.subplots(1,1)
         ax.set_xlabel("torsion angle (radians)")
         ax.set_ylabel("energy")
 
         print("step1")
-        tc_data = [tc.gradient.from_file(Path(f"./test/generated_files/torsion_{i}/tc.out")) for i in range(cls.BuH_torsion_num_points)]
+        tc_data = [tc.gradient.from_file(cls.torsion_folder/f"torsion_{i}/tc.out") for i in range(cls.BuH_torsion_num_points)]
         y_tc = [i.energy for i in tc_data]
         ax.scatter(x_ax,y_tc,marker="x",color="r", label="tc energies")
 
@@ -117,7 +121,7 @@ class generate_test_files:
         for i in range(cls.BuH_torsion_num_points):
             if not i%2 == 0:
                 continue
-            extracted_file = list(Path(f"./test/generated_files/torsion_{i}").glob("extracted*"))[0]
+            extracted_file = list((cls.torsion_folder/f"torsion_{i}").glob("extracted*"))[0]
             test_pes.add_point(extracted_file)
         y_shep = [test_pes.eval_point_geom(g) for g in geoms]
         ax.plot(x_ax, y_shep, color="cyan", label="sheppard with half of ref data")
@@ -126,7 +130,7 @@ class generate_test_files:
         for i in range(cls.BuH_torsion_num_points):
             if not i%4 == 0:
                 continue
-            extracted_file = list(Path(f"./test/generated_files/torsion_{i}").glob("extracted*"))[0]
+            extracted_file = list((cls.torsion_folder/f"torsion_{i}").glob("extracted*"))[0]
             test_pes.add_point(extracted_file)
         y_shep = [test_pes.eval_point_geom(g) for g in geoms]
         ax.plot(x_ax, y_shep, color="lime", label="sheppard with quarter of ref data")
@@ -134,6 +138,138 @@ class generate_test_files:
         ax.legend()
         f.savefig("./test/generated_files/test_fig.png")
 
+    @classmethod
+    def generate_tc_md_BuH(cls):
+        """
+        run Terachm on geometries from the md
+        """
+        md_path = Path("./test/generated_files/md")
+        for p in md_path.glob("run*"):
+            hess_dir = p/"hess_dir"
+            hess_dir.mkdir(exist_ok=True)
+            md_geoms = xyz.combinedGeoms.readFile(p/"scr/coors.xyz")
+            for i in range(0,len(md_geoms.geometries), cls.md_nth_geom):
+                g = md_geoms.geometries[i]
+                if not (hess_dir/str(i)).exists():
+                    with conman.minimal_context(hess_dir/str(i),"./test/tc_files/frequencies/tc.in","./test/tc_files/frequencies/sbatch.sh") as man:
+                        g.write_file("geom.xyz")
+                        man.launch()
+
+    @classmethod
+    def extract_tc_md_BuH(cls):
+        md_path = Path("./test/generated_files/md")
+        for p in md_path.glob("run*"):
+            hess_dir = p/"hess_dir"
+            md_geoms = xyz.combinedGeoms.readFile(p/"scr/coors.xyz")
+            for i in range(0,len(md_geoms.geometries), cls.md_nth_geom):
+                print(i)
+                with conman.enter_dir(hess_dir/str(i)):
+                    if not Path("extracted.pt").exists() or Path("extracted.ex").exists():
+                        extract.point_from_files(Path("tc.out"),Path("geom.xyz"),Path("scr.geom/Hessian.bin"),Path("extracted"))
+
+    @classmethod
+    def generate_torsion_plot_2(cls):
+        """
+        generates a plot of the torsion PES comparing against additional md simulation
+        """
+        x_ax = 2*np.pi*np.array(range(cls.BuH_torsion_num_points))/cls.BuH_torsion_num_points
+        geom_files = [cls.torsion_folder/f"torsion_{i}/geom.xyz" for i in range(cls.BuH_torsion_num_points)]
+        geoms = [xyz.Geometry.from_file(f) for f in geom_files]
+        f, ax = plt.subplots(1,1)
+        ax.set_xlabel("torsion angle (radians)")
+        ax.set_ylabel("energy")
+
+        print("step1")
+        tc_data = [tc.gradient.from_file(cls.torsion_folder/f"torsion_{i}/tc.out") for i in range(cls.BuH_torsion_num_points)]
+        y_tc = [i.energy for i in tc_data]
+        ax.scatter(x_ax,y_tc,marker="x",color="r", label="tc energies")
+
+        # print("step2")
+        # test_pes = sheppard.Pes.new_pes()
+        # md_path = Path("./test/generated_files/md")
+        # for p in md_path.glob("run_00"):
+        #     hess_dir = p/"hess_dir"
+        #     md_geoms = xyz.combinedGeoms.readFile(p/"scr/coors.xyz")
+        #     for i in range(0,len(md_geoms.geometries), cls.md_nth_geom):
+        #         print(i)
+        #         if Path(hess_dir/str(i)/"extracted.pt").exists():
+        #             test_pes.add_point(hess_dir/str(i)/"extracted.pt")
+        #         elif Path(hess_dir/str(i)/"extracted.ex").exists():
+        #             test_pes.add_point(hess_dir/str(i)/"extracted.ex")
+        # y_shep = [test_pes.eval_point_geom(g) for g in geoms]
+        # ax.plot(x_ax, y_shep, color="r", label="sheppard with new extracted files")
+
+        # print("step3")
+        # test_pes = sheppard.Pes.new_pes()
+        # md_path = Path("./test/generated_files/md")
+        # for p in md_path.glob("run_00"):
+        #     hess_dir = p/"hess_dir"
+        #     md_geoms = xyz.combinedGeoms.readFile(p/"scr/coors.xyz")
+        #     for i in range(0,len(md_geoms.geometries), cls.md_nth_geom):
+        #         print(i)
+        #         if Path(hess_dir/str(i)/"extracted.pt").exists():
+        #             test_pes.add_point(hess_dir/str(i)/"extracted.pt")
+        # y_shep = [test_pes.eval_point_geom(g) for g in geoms]
+        # ax.plot(x_ax, y_shep, color="pink", label="sheppard with new extracted .pt files")
+
+        # generate a PES along the torsion scan using masked ground truth values
+        print("step4")
+        test_pes = sheppard.Pes.new_pes()
+        for i in range(cls.BuH_torsion_num_points):
+            if not i%2 == 0:
+                continue
+            extracted_file = list((cls.torsion_folder/f"torsion_{i}").glob("extracted*"))[0]
+            test_pes.add_point(extracted_file)
+        y_shep = [test_pes.eval_point_geom(g) for g in geoms]
+        ax.plot(x_ax, y_shep, color="cyan", label="sheppard with half of ref data")
+
+        test_pes = sheppard.Pes.new_pes()
+        for i in range(cls.BuH_torsion_num_points):
+            if not i%4 == 0:
+                continue
+            extracted_file = list((cls.torsion_folder/f"torsion_{i}").glob("extracted*"))[0]
+            test_pes.add_point(extracted_file)
+        y_shep = [test_pes.eval_point_geom(g) for g in geoms]
+        ax.plot(x_ax, y_shep, color="lime", label="sheppard with quarter of ref data")
+
+        print("step5")
+        test_pes = sheppard.Pes.new_pes()
+        extracted_file = list((cls.torsion_folder/f"torsion_{12}").glob("extracted*"))[0]
+        test_pes.add_point(extracted_file)
+        y_shep = [test_pes.eval_point_geom(g) for g in geoms]
+        ax.plot(x_ax, y_shep, color="gray", linestyle="-", label="single point reference")
+
+        test_pes = sheppard.Pes.new_pes()
+        extracted_file = list((cls.torsion_folder/f"torsion_{18}").glob("extracted*"))[0]
+        test_pes.add_point(extracted_file)
+        y_shep = [test_pes.eval_point_geom(g) for g in geoms]
+        ax.plot(x_ax, y_shep, color="gray", linestyle="dotted", label="single point reference")
+
+        ax.legend()
+        f.savefig(cls.output_folder/"test_fig_2.png")
+
+    @classmethod
+    def debug(cls):
+        # generate a PES along the torsion scan using masked ground truth values
+        x_ax = 2*np.pi*np.array(range(cls.BuH_torsion_num_points))/cls.BuH_torsion_num_points
+        geom_files = [cls.torsion_folder/f"torsion_{i}/geom.xyz" for i in range(cls.BuH_torsion_num_points)]
+        geoms = [xyz.Geometry.from_file(f) for f in geom_files]
+        test_pes = sheppard.Pes.new_pes()
+        for i in range(cls.BuH_torsion_num_points):
+            if not i%2 == 0:
+                continue
+            extracted_file = list((cls.torsion_folder/f"torsion_{i}").glob("extracted*"))[0]
+            test_pes.add_point(extracted_file)
+        y_shep = [test_pes.eval_point_geom(g) for g in geoms]
+        embed()
+
+        test_pes = sheppard.Pes.new_pes()
+        for i in range(cls.BuH_torsion_num_points):
+            if not i%4 == 0:
+                continue
+            extracted_file = list((cls.torsion_folder/f"torsion_{i}").glob("extracted*"))[0]
+            test_pes.add_point(extracted_file)
+        y_shep = [test_pes.eval_point_geom(g) for g in geoms]
 
     @classmethod
     def generate_all(cls):
@@ -142,6 +278,10 @@ class generate_test_files:
         generate_test_files.generate_BuH_pseudo()
         generate_test_files.generate_tc_BuH_torsion()
         generate_test_files.extract_tc_BuH_torsion()
+        # run md
+        # generate_test_files.generate_tc_md_BuH()
+        # generate_test_files.extract_tc_md_BuH()
+
 
 
 class sheppard_test(unittest.TestCase):
@@ -153,19 +293,11 @@ class sheppard_test(unittest.TestCase):
         # print(f"evaluated sheppard at test: {e}")
         self.assertAlmostEqual(pseudo_e, e, places=places)
 
-    # def setUp(self):
-    #     path = Path("./test/test_files/BuH.xyz")
-    #     g = xyz.Geometry.from_file(path)
-    #     pes = sheppard.Pes.new_pes()
-
-    def test_test(self):
-        self.assertEqual(1, 1)
-
     def test_energy_0(self):
         # print("Energy Test 0: get energy back at same point")
         pes = sheppard.Pes.new_pes()
         pes.add_point("./test/generated_files/BuH.pt", symmeterize=False)
-        test_path = Path("./test/test_files/BuH.xyz")
+        test_path = Path("./test/test_files/BuH.test.xyz")
         self.point_test(test_path, pes)
 
     def test_energy_1(self):
@@ -192,7 +324,7 @@ class sheppard_test(unittest.TestCase):
         # print("symmeterized at min")
         pes = sheppard.Pes.new_pes()
         pes.add_point("./test/generated_files/BuH.pt", symmeterize=True)
-        test_path = Path("./test/test_files/BuH.xyz")
+        test_path = Path("./test/test_files/BuH.test.xyz")
         self.point_test(test_path, pes)
 
     def test_gradient_0(self):
@@ -226,7 +358,7 @@ class grads_test(unittest.TestCase):
         self.assertTrue(np.allclose(sym_z, ext_z))
 
     def test_inv_dist_1(self):
-        test_path = Path("./test/test_files/BuH.xyz")
+        test_path = Path("./test/test_files/BuH.test.xyz")
         test_geom = xyz.Geometry.from_file(test_path)
         one_d_geom = test_geom.coords.reshape(-1)
         sym_z = self.sympy_grads.calc_inv_dist(one_d_geom)
@@ -234,7 +366,7 @@ class grads_test(unittest.TestCase):
         self.assertTrue(np.allclose(sym_z, ext_z))
 
     def test_inv_jacobian_0(self):
-        test_path = Path("./test/test_files/BuH.xyz")
+        test_path = Path("./test/test_files/BuH.test.xyz")
         test_geom = xyz.Geometry.from_file(test_path)
         one_d_geom = test_geom.coords.reshape(-1)
         sym_z = self.sympy_grads.calc_inv_jacobian(one_d_geom)
@@ -257,7 +389,7 @@ class hessian_test(unittest.TestCase):
         self.exact_grads = grads.Exact_Grad(num_atoms_BuH)
 
     def test_inv_hessian_0(self):
-        test_path = Path("./test/test_files/BuH.xyz")
+        test_path = Path("./test/test_files/BuH.test.xyz")
         test_geom = xyz.Geometry.from_file(test_path)
         one_d_geom = test_geom.coords.reshape(-1)
         sym_z = self.sympy_grads.calc_inv_hessian(one_d_geom)
@@ -306,6 +438,7 @@ def parse():
     )
     args.add_argument("-t", "--timings", action="store_true", help="run timing tests")
     args.add_argument("-u", "--unittest", action="store_true", help="perform unittests")
+    args.add_argument("-z", action="store_true", help="Brandon's helper arg")
     args = args.parse_args()
     return args
 
@@ -322,9 +455,18 @@ def main():
         # !!! Two of these tests fail at the moment, solely because of the level of precision that
         # the tests require are greater than what we should reasonbly expect, but I'm leaving the
         # tests as failing because they're a great reminder later that  we may just run into a precision issue
+        print(sys.argv)
+        del sys.argv[1:]
         unittest.main()
     if args.make_plot is not None:
         generate_test_files.generate_torsion_plot(args.make_plot)
+    if args.z:
+        #generate_test_files.generate_tc_md_BuH()
+        #generate_test_files.extract_tc_md_BuH()
+        generate_test_files.generate_torsion_plot_2()
+        #generate_test_files.debug()
+        # generate_test_files.generate_BuH_pseudo()
+
 
 
 if __name__ == "__main__":
