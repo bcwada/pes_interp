@@ -3,15 +3,15 @@ perform minimization automatically
 Validate thermostat data (make sure all three wells are reached)
 speed up PES evaluations
 
-! check why torsion scan only returns .ex files (methyl rotation?)
-!
 
 classify dynamics data
 build ML model
 
 
 notes:
-Only including .pt files so far seems to cause the PES to overestimate, especially compared against .ex files
+Even weighting parameter 250 suffers from a weighting problem. 250 is too close to an L_inf norm. 
+One of the methyl rotations may not affect the largest distance and you can end up with equally weighted contributions
+
 
 Figure out why plots are off
     doesn't seem to be the md sampling

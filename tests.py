@@ -214,30 +214,33 @@ class generate_test_files:
 
         # generate a PES along the torsion scan using masked ground truth values
         print("step4")
-        test_pes = sheppard.Pes.new_pes()
-        for i in range(cls.BuH_torsion_num_points):
-            if not i%2 == 0:
-                continue
-            extracted_file = list((cls.torsion_folder/f"torsion_{i}").glob("extracted*"))[0]
-            test_pes.add_point(extracted_file)
-        y_shep = [test_pes.eval_point_geom(g) for g in geoms]
-        ax.plot(x_ax, y_shep, color="cyan", label="sheppard with half of ref data")
+        # test_pes = sheppard.Pes.new_pes()
+        # for i in range(cls.BuH_torsion_num_points):
+        #     if not i%2 == 0:
+        #         continue
+        #     extracted_file = list((cls.torsion_folder/f"torsion_{i}").glob("extracted*"))[0]
+        #     test_pes.add_point(extracted_file)
+        # y_shep = [test_pes.eval_point_geom(g) for g in geoms]
+        # ax.plot(x_ax, y_shep, color="cyan", label="sheppard with half of ref data")
 
         test_pes = sheppard.Pes.new_pes()
+        print("adding points")
         for i in range(cls.BuH_torsion_num_points):
             if not i%4 == 0:
                 continue
             extracted_file = list((cls.torsion_folder/f"torsion_{i}").glob("extracted*"))[0]
             test_pes.add_point(extracted_file)
+        print("evaluating points")
         y_shep = [test_pes.eval_point_geom(g) for g in geoms]
+        print("plotting")
         ax.plot(x_ax, y_shep, color="lime", label="sheppard with quarter of ref data")
 
         print("step5")
         test_pes = sheppard.Pes.new_pes()
         extracted_file = list((cls.torsion_folder/f"torsion_{12}").glob("extracted*"))[0]
-        test_pes.add_point(extracted_file)
+        test_pes.add_point(extracted_file, symmeterize=False)
         y_shep = [test_pes.eval_point_geom(g) for g in geoms]
-        ax.plot(x_ax, y_shep, color="gray", linestyle="-", label="single point reference")
+        ax.plot(x_ax, y_shep, color="gray", linestyle="-", label="single point reference, unsymmeterized")
 
         test_pes = sheppard.Pes.new_pes()
         extracted_file = list((cls.torsion_folder/f"torsion_{18}").glob("extracted*"))[0]
@@ -249,19 +252,71 @@ class generate_test_files:
         f.savefig(cls.output_folder/"test_fig_2.png")
 
     @classmethod
-    def debug(cls):
-        # generate a PES along the torsion scan using masked ground truth values
+    def generate_torsion_plot_3(cls):
+        """
+        generates torsion scan plots testing inclusion of .pt and .ex files 
+        """
         x_ax = 2*np.pi*np.array(range(cls.BuH_torsion_num_points))/cls.BuH_torsion_num_points
         geom_files = [cls.torsion_folder/f"torsion_{i}/geom.xyz" for i in range(cls.BuH_torsion_num_points)]
         geoms = [xyz.Geometry.from_file(f) for f in geom_files]
+        f, ax = plt.subplots(1,1)
+        ax.set_xlabel("torsion angle (radians)")
+        ax.set_ylabel("energy")
+
+        print("step1")
+        tc_data = [tc.gradient.from_file(cls.torsion_folder/f"torsion_{i}/tc.out") for i in range(cls.BuH_torsion_num_points)]
+        y_tc = [i.energy for i in tc_data]
+        ax.scatter(x_ax,y_tc,marker="x",color="r", label="tc energies")
+
+        # generate a PES along the torsion scan using masked ground truth values
+        print("step4")
+        test_pes = sheppard.Pes.new_pes()
+        for i in range(cls.BuH_torsion_num_points):
+            if not i%1 == 0:
+                continue
+            if (cls.torsion_folder/f"torsion_{i}/extracted.pt").exists():
+                test_pes.add_point(cls.torsion_folder/f"torsion_{i}/extracted.pt")
+        y_shep = [test_pes.eval_point_geom(g) for g in geoms]
+        ax.plot(x_ax, y_shep, color="red", label="all .pt")
+
+        print("step5")
         test_pes = sheppard.Pes.new_pes()
         for i in range(cls.BuH_torsion_num_points):
             if not i%2 == 0:
                 continue
+            if (cls.torsion_folder/f"torsion_{i}/extracted.pt").exists():
+                test_pes.add_point(cls.torsion_folder/f"torsion_{i}/extracted.pt")
+        y_shep = [test_pes.eval_point_geom(g) for g in geoms]
+        ax.plot(x_ax, y_shep, color="green", label="half .pt")
+
+        print("test6")
+        test_pes = sheppard.Pes.new_pes()
+        for i in range(cls.BuH_torsion_num_points):
+            if not i%4 == 0:
+                continue
+            if (cls.torsion_folder/f"torsion_{i}/extracted.pt").exists():
+                test_pes.add_point(cls.torsion_folder/f"torsion_{i}/extracted.pt")
+        y_shep = [test_pes.eval_point_geom(g) for g in geoms]
+        ax.plot(x_ax, y_shep, color="blue", label="quarter .pt")
+
+        print("test7")
+        test_pes = sheppard.Pes.new_pes()
+        for i in range(cls.BuH_torsion_num_points):
+            if not i%4 == 0:
+                continue
             extracted_file = list((cls.torsion_folder/f"torsion_{i}").glob("extracted*"))[0]
             test_pes.add_point(extracted_file)
         y_shep = [test_pes.eval_point_geom(g) for g in geoms]
-        embed()
+        ax.plot(x_ax, y_shep, color="lime", label="sheppard with quarter of ref data")
+
+        ax.legend()
+        f.savefig(cls.output_folder/"test_fig_3.png")
+
+
+    @classmethod
+    def debug(cls):
+        geom_files = [cls.torsion_folder/f"torsion_{i}/geom.xyz" for i in range(cls.BuH_torsion_num_points)]
+        geoms = [xyz.Geometry.from_file(f) for f in geom_files]
 
         test_pes = sheppard.Pes.new_pes()
         for i in range(cls.BuH_torsion_num_points):
@@ -270,6 +325,13 @@ class generate_test_files:
             extracted_file = list((cls.torsion_folder/f"torsion_{i}").glob("extracted*"))[0]
             test_pes.add_point(extracted_file)
         y_shep = [test_pes.eval_point_geom(g) for g in geoms]
+        embed()
+
+        test_pes = sheppard.Pes.new_pes()
+        extracted_file = list((cls.torsion_folder/f"torsion_{18}").glob("extracted*"))[0]
+        test_pes.add_point(extracted_file)
+        y_shep = [test_pes.eval_point_geom(g) for g in geoms]
+        embed()
 
     @classmethod
     def generate_all(cls):
@@ -291,6 +353,13 @@ class sheppard_test(unittest.TestCase):
         # print(f"evaluated pseudo at test: {pseudo_e}")
         e = pes.eval_point(test_geom.coords.reshape(-1))
         # print(f"evaluated sheppard at test: {e}")
+
+        # inv_dist = sheppard.Pes_Point.calc_inv_dist(test_geom.coords.reshape(-1))
+        # weights = []
+        # for i in pes.point_list:
+        #     weights.append(pes.weight(i.inv_dist, inv_dist))
+        # embed()
+
         self.assertAlmostEqual(pseudo_e, e, places=places)
 
     def test_energy_0(self):
@@ -343,66 +412,79 @@ class sheppard_test(unittest.TestCase):
         self.assertTrue(np.allclose(pseudo_grad, pes_grad, rtol=0, atol=10**-5))
 
 
-class grads_test(unittest.TestCase):
-    def setUp(self) -> None:
-        num_atoms_BuH = 14
-        self.sympy_grads = grads.Sympy_Grad(num_atoms_BuH)
-        self.exact_grads = grads.Exact_Grad(num_atoms_BuH)
-
-    def test_inv_dist_0(self):
+class pes_point_test(unittest.TestCase):
+    def test_permute(self) -> None:
+        pt = sheppard.Pes_Point.from_file("./test/generated_files/BuH.pt")
         test_path = Path("./test/test_files/BuH.test.small_disp.xyz")
-        test_geom = xyz.Geometry.from_file(test_path)
-        one_d_geom = test_geom.coords.reshape(-1)
-        sym_z = self.sympy_grads.calc_inv_dist(one_d_geom)
-        ext_z = self.exact_grads.calc_inv_dist(one_d_geom)
-        self.assertTrue(np.allclose(sym_z, ext_z))
-
-    def test_inv_dist_1(self):
-        test_path = Path("./test/test_files/BuH.test.xyz")
-        test_geom = xyz.Geometry.from_file(test_path)
-        one_d_geom = test_geom.coords.reshape(-1)
-        sym_z = self.sympy_grads.calc_inv_dist(one_d_geom)
-        ext_z = self.exact_grads.calc_inv_dist(one_d_geom)
-        self.assertTrue(np.allclose(sym_z, ext_z))
-
-    def test_inv_jacobian_0(self):
-        test_path = Path("./test/test_files/BuH.test.xyz")
-        test_geom = xyz.Geometry.from_file(test_path)
-        one_d_geom = test_geom.coords.reshape(-1)
-        sym_z = self.sympy_grads.calc_inv_jacobian(one_d_geom)
-        ext_z = self.exact_grads.calc_inv_jacobian(one_d_geom)
-        self.assertTrue(np.allclose(sym_z, ext_z))
-
-    def test_inv_jacobian_1(self):
-        test_path = Path("./test/test_files/BuH.test.small_disp.xyz")
-        test_geom = xyz.Geometry.from_file(test_path)
-        one_d_geom = test_geom.coords.reshape(-1)
-        sym_z = self.sympy_grads.calc_inv_jacobian(one_d_geom)
-        ext_z = self.exact_grads.calc_inv_jacobian(one_d_geom)
-        self.assertTrue(np.allclose(sym_z, ext_z))
+        g = xyz.Geometry.from_file(test_path)
+        perm_group = [[4,5,6],[8,7],[9,10],[11,12,13]]
+        unperm_energy = pt.taylor_approx_from_coords(g.coords.reshape(-1))
+        perm_g = sheppard.Pes_Point.permute_coords(g.coords, perm_group)
+        pt.permute_self(perm_group)
+        perm_energy = pt.taylor_approx_from_coords(perm_g)
+        self.assertAlmostEqual(perm_energy, unperm_energy)
 
 
-class hessian_test(unittest.TestCase):
-    def setUp(self) -> None:
-        num_atoms_BuH = 14
-        self.sympy_grads = grads.Sympy_Grad(num_atoms_BuH)
-        self.exact_grads = grads.Exact_Grad(num_atoms_BuH)
+# class grads_test(unittest.TestCase):
+#     def setUp(self) -> None:
+#         num_atoms_BuH = 14
+#         self.sympy_grads = grads.Sympy_Grad(num_atoms_BuH)
+#         self.exact_grads = grads.Exact_Grad(num_atoms_BuH)
 
-    def test_inv_hessian_0(self):
-        test_path = Path("./test/test_files/BuH.test.xyz")
-        test_geom = xyz.Geometry.from_file(test_path)
-        one_d_geom = test_geom.coords.reshape(-1)
-        sym_z = self.sympy_grads.calc_inv_hessian(one_d_geom)
-        ext_z = self.exact_grads.calc_inv_hessian(one_d_geom)
-        self.assertTrue(np.allclose(sym_z, ext_z))
+#     def test_inv_dist_0(self):
+#         test_path = Path("./test/test_files/BuH.test.small_disp.xyz")
+#         test_geom = xyz.Geometry.from_file(test_path)
+#         one_d_geom = test_geom.coords.reshape(-1)
+#         sym_z = self.sympy_grads.calc_inv_dist(one_d_geom)
+#         ext_z = self.exact_grads.calc_inv_dist(one_d_geom)
+#         self.assertTrue(np.allclose(sym_z, ext_z))
 
-    def test_inv_hessian_1(self):
-        test_path = Path("./test/test_files/BuH.test.small_disp.xyz")
-        test_geom = xyz.Geometry.from_file(test_path)
-        one_d_geom = test_geom.coords.reshape(-1)
-        sym_z = self.sympy_grads.calc_inv_hessian(one_d_geom)
-        ext_z = self.exact_grads.calc_inv_hessian(one_d_geom)
-        self.assertTrue(np.allclose(sym_z, ext_z))
+#     def test_inv_dist_1(self):
+#         test_path = Path("./test/test_files/BuH.test.xyz")
+#         test_geom = xyz.Geometry.from_file(test_path)
+#         one_d_geom = test_geom.coords.reshape(-1)
+#         sym_z = self.sympy_grads.calc_inv_dist(one_d_geom)
+#         ext_z = self.exact_grads.calc_inv_dist(one_d_geom)
+#         self.assertTrue(np.allclose(sym_z, ext_z))
+
+#     def test_inv_jacobian_0(self):
+#         test_path = Path("./test/test_files/BuH.test.xyz")
+#         test_geom = xyz.Geometry.from_file(test_path)
+#         one_d_geom = test_geom.coords.reshape(-1)
+#         sym_z = self.sympy_grads.calc_inv_jacobian(one_d_geom)
+#         ext_z = self.exact_grads.calc_inv_jacobian(one_d_geom)
+#         self.assertTrue(np.allclose(sym_z, ext_z))
+
+#     def test_inv_jacobian_1(self):
+#         test_path = Path("./test/test_files/BuH.test.small_disp.xyz")
+#         test_geom = xyz.Geometry.from_file(test_path)
+#         one_d_geom = test_geom.coords.reshape(-1)
+#         sym_z = self.sympy_grads.calc_inv_jacobian(one_d_geom)
+#         ext_z = self.exact_grads.calc_inv_jacobian(one_d_geom)
+#         self.assertTrue(np.allclose(sym_z, ext_z))
+
+
+# class hessian_test(unittest.TestCase):
+#     def setUp(self) -> None:
+#         num_atoms_BuH = 14
+#         self.sympy_grads = grads.Sympy_Grad(num_atoms_BuH)
+#         self.exact_grads = grads.Exact_Grad(num_atoms_BuH)
+
+#     def test_inv_hessian_0(self):
+#         test_path = Path("./test/test_files/BuH.test.xyz")
+#         test_geom = xyz.Geometry.from_file(test_path)
+#         one_d_geom = test_geom.coords.reshape(-1)
+#         sym_z = self.sympy_grads.calc_inv_hessian(one_d_geom)
+#         ext_z = self.exact_grads.calc_inv_hessian(one_d_geom)
+#         self.assertTrue(np.allclose(sym_z, ext_z))
+
+#     def test_inv_hessian_1(self):
+#         test_path = Path("./test/test_files/BuH.test.small_disp.xyz")
+#         test_geom = xyz.Geometry.from_file(test_path)
+#         one_d_geom = test_geom.coords.reshape(-1)
+#         sym_z = self.sympy_grads.calc_inv_hessian(one_d_geom)
+#         ext_z = self.exact_grads.calc_inv_hessian(one_d_geom)
+#         self.assertTrue(np.allclose(sym_z, ext_z))
 
 
 class timings:
@@ -463,10 +545,10 @@ def main():
     if args.z:
         #generate_test_files.generate_tc_md_BuH()
         #generate_test_files.extract_tc_md_BuH()
-        generate_test_files.generate_torsion_plot_2()
-        #generate_test_files.debug()
-        # generate_test_files.generate_BuH_pseudo()
 
+        generate_test_files.debug()
+        # generate_test_files.generate_torsion_plot_2()
+        # generate_test_files.generate_torsion_plot_3()
 
 
 if __name__ == "__main__":
