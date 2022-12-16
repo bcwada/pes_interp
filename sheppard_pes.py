@@ -46,7 +46,6 @@ class Pes_Point:
         """
         perm is a permutation with the same shape as global_vars.PERMUTATION_GROUP
         """
-        # maybe TODO, this is tightly coupled to global_vars now
         copied_coords = copy.deepcopy(coords)
         for orig_group, permed_group in zip(global_vars.PERMUTATION_GROUPS,perm):
             for i, j in zip(orig_group, permed_group):
@@ -108,8 +107,10 @@ class Pes:
                 pt.permute_self(c)
                 self.point_list.append(pt)
 
-    def weight(self, z1, z2):
-        return 1 / (LEVEL_SHIFT + np.power(np.sum(np.power(z1 - z2, global_vars.WEIGHTING_PARAM)), 1 / global_vars.WEIGHTING_PARAM))
+    @classmethod
+    def weight(self, z1, z2, p=global_vars.WEIGHTING_PARAM, power=global_vars.WEIGHTING_POWER):
+        # return 1 / (LEVEL_SHIFT + np.power(np.sum(np.power(z1 - z2, p)), 1 / p))
+        return 1 / (LEVEL_SHIFT + np.power(np.linalg.norm(z1-z2, ord=2),power))
 
     def eval_point_geom(self, geom: xyz.Geometry):
         """Return Energy for a given GEOMetry.
@@ -134,7 +135,7 @@ class Pes:
         # etime = 0
         for ind,i in enumerate(self.point_list):
             # t1 = time.time()
-            weights.append(self.weight(i.inv_dist, inv_dist))
+            weights.append(Pes.weight(i.inv_dist, inv_dist))
             # t2 = time.time()
             energies.append(i.taylor_approx(inv_dist))
             # t3 = time.time()
@@ -147,14 +148,32 @@ class Pes:
         weights = weights/np.sum(weights)
         return np.dot(weights,energies)
 
-    def get_weights(self, coords, normalize=False):
+    def get_weights(self, coords, normalize=False, p=global_vars.WEIGHTING_PARAM):
         inv_dist = Pes_Point.calc_inv_dist(coords)
         weights = []
         for ind,i in enumerate(self.point_list):
-            weights.append(self.weight(i.inv_dist, inv_dist))
+            weights.append(Pes.weight(i.inv_dist, inv_dist, p=p))
         if normalize:
             weights = weights/np.sum(weights)
         return weights
+
+    def get_weight_statistics(self, coords, normalize=False, p=global_vars.WEIGHTING_PARAM):
+        inv_dist = Pes_Point.calc_inv_dist(coords)
+        weights = []
+        for ind,i in enumerate(self.point_list):
+            weights.append(Pes.weight(i.inv_dist, inv_dist, p=p))
+        if normalize:
+            weights = weights/np.sum(weights)
+        weights = np.array(weights)
+        avg = np.average(weights)
+        num = len(weights)
+        maxi = np.max(weights)
+        num_max = np.count_nonzero(weights == maxi)
+        max_inds = []
+        for i,w in enumerate(weights):
+            if w == maxi:
+                max_inds.append(i)
+        print(f"avg:{avg} num:{num} max{maxi} num_max{num_max} \nmax_inds:{max_inds}")
 
 
     def eval_gradient(self, coords):

@@ -9,8 +9,11 @@ build ML model
 
 
 notes:
-Even weighting parameter 250 suffers from a weighting problem. 250 is too close to an L_inf norm. 
+- Even weighting parameter 250 suffers from a weighting problem. 250 is too close to an L_inf norm. 
 One of the methyl rotations may not affect the largest distance and you can end up with equally weighted contributions
+
+- The torsion is a little too perfectly spaced, and some of the torsion points look identical (across the mirror plane)
+
 
 
 Figure out why plots are off
