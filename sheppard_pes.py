@@ -26,7 +26,7 @@ class Pes_Point:
     freqs: np.array
     transform_matrix: np.array
 
-    grads_source = Exact_Grad(global_vars.NUM_ATOMS)
+    grads_source = Sympy_Grad(global_vars.NUM_ATOMS)
     # grads_source = Sympy_Grad(global_vars.NUM_ATOMS)
     calc_inv_dist = grads_source.calc_inv_dist
 
@@ -52,9 +52,52 @@ class Pes_Point:
                 copied_coords[j] = coords[i]
         return copied_coords
 
+    @classmethod
+    def permute_inv_dist(cls, arr, perm):
+        """
+        performs the appropriate perumtation on the natoms*(natoms-1)/2 array
+        Note: also works on appropriately sized matrices
+        """
+        natoms = global_vars.NUM_ATOMS
+        assert(len(arr) == natoms*(natoms-1)//2)
+        copied_arr = copy.deepcopy(arr)
+        # other_arr = copy.deepcopy(copied_arr)
+        num_inds = natoms*(natoms-1)//2
+
+        def get_ind(i,j):
+            less = min(i,j)
+            more = max(i,j)
+            ind = num_inds-((natoms-less-1)*(natoms-less)//2) + more - less - 1
+            return ind
+
+        mat = []
+        for i in range(natoms):
+            l = []
+            for j in range(natoms):
+                if i == j:
+                    l.append(np.zeros_like(arr[0]))
+                else:
+                    l.append(arr[get_ind(i,j)])
+            mat.append(l)
+        mat = np.array(mat)
+
+        mat_orig_copy = copy.deepcopy(mat)
+        for orig_group, permed_group in zip(global_vars.PERMUTATION_GROUPS, perm):
+            for i, j in zip (orig_group, permed_group):
+                mat[j] = mat_orig_copy[i]
+        mat_orig_copy = copy.deepcopy(mat)
+        for orig_group, permed_group in zip(global_vars.PERMUTATION_GROUPS, perm):
+            for i, j in zip (orig_group, permed_group):
+                mat[:,j] = mat_orig_copy[:,i]
+
+        for i in range(natoms):
+            for j in range(i+1,natoms):
+                copied_arr[get_ind(i,j)] = mat[i,j]
+        return copied_arr
+
     def permute_self(self, perm):
         self.coords = Pes_Point.permute_coords(self.coords, perm)
-        self.transform_matrix = Pes_Point.permute_coords(self.transform_matrix.T, perm).T
+        self.transform_matrix = Pes_Point.permute_inv_dist(self.transform_matrix.T, perm).T
 
     @property
     def inv_dist(self):

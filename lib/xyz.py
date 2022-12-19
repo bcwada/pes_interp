@@ -92,6 +92,10 @@ class Geometry:
             self.coords[i] = r.apply(self.coords[i])
         self.coords = self.coords+shift_vec
 
+    def dist(self, key1, key2):
+        """returns the distance between the atoms at indices key1 and key2"""
+        return np.sqrt(np.sum(np.square(self.coords[key1] - self.coords[key2])))
+
 @dataclass
 class combinedGeoms:
     geometries: List[Geometry]

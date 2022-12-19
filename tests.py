@@ -1,6 +1,9 @@
-import argparse
 from IPython import embed
+import cProfile
+import pstats
 
+import argparse
+import itertools
 import sys
 import numpy as np
 import unittest
@@ -17,6 +20,7 @@ import lib.tc_reader as tc
 import point_processor
 import lib.context_manager as conman
 import tools.point_extractor as extract
+import global_vars
 
 
 class common_test_funcs:
@@ -41,6 +45,7 @@ class generate_test_files:
     def generate_folders(cls):
         cls.output_folder.mkdir(parents=True, exist_ok=True)
         cls.torsion_folder.mkdir(parents=True, exist_ok=True)
+        (cls.output_folder/"sym_test").mkdir(parents=True, exist_ok=True)
 
     @classmethod
     def generate_BuH_pseudo(cls):
@@ -89,9 +94,76 @@ class generate_test_files:
                 extract.point_from_files(Path("tc.out"),Path("geom.xyz"),Path("scr.geom/Hessian.bin"),Path("extracted"))
 
     @classmethod
+    def generate_tc_md_BuH(cls):
+        """
+        run Terachm on geometries from the md
+        """
+        md_path = Path("./test/generated_files/md")
+        for p in md_path.glob("run*"):
+            hess_dir = p/"hess_dir"
+            hess_dir.mkdir(exist_ok=True)
+            md_geoms = xyz.combinedGeoms.readFile(p/"scr/coors.xyz")
+            for i in range(0,len(md_geoms.geometries), cls.md_nth_geom):
+                g = md_geoms.geometries[i]
+                if not (hess_dir/str(i)).exists():
+                    with conman.minimal_context(hess_dir/str(i),"./test/tc_files/frequencies/tc.in","./test/tc_files/frequencies/sbatch.sh") as man:
+                        g.write_file("geom.xyz")
+                        man.launch()
+
+    @classmethod
+    def extract_tc_md_BuH(cls):
+        md_path = Path("./test/generated_files/md")
+        for p in md_path.glob("run*"):
+            hess_dir = p/"hess_dir"
+            md_geoms = xyz.combinedGeoms.readFile(p/"scr/coors.xyz")
+            for i in range(0,len(md_geoms.geometries), cls.md_nth_geom):
+                print(i)
+                with conman.enter_dir(hess_dir/str(i)):
+                    if not Path("extracted.pt").exists() or Path("extracted.ex").exists():
+                        extract.point_from_files(Path("tc.out"),Path("geom.xyz"),Path("scr.geom/Hessian.bin"),Path("extracted"))
+
+    @classmethod
+    def setup_torsion_plot(cls, plot_ref=True):
+        x_ax = 2*np.pi*np.array(range(cls.BuH_torsion_num_points))/cls.BuH_torsion_num_points
+        geom_files = [cls.torsion_folder/f"torsion_{i}/geom.xyz" for i in range(cls.BuH_torsion_num_points)]
+        geoms = [xyz.Geometry.from_file(f) for f in geom_files]
+        f, ax = plt.subplots(1,1)
+        ax.set_xlabel("torsion angle (radians)")
+        ax.set_ylabel("energy")
+        if plot_ref:
+            tc_data = [tc.gradient.from_file(cls.torsion_folder/f"torsion_{i}/tc.out") for i in range(cls.BuH_torsion_num_points)]
+            tc_data = np.array(tc_data)
+            y_tc = [i.energy for i in tc_data]
+            y_tc = np.array(y_tc) 
+            ax.scatter(x_ax,y_tc,marker="x",color="r", label="tc energies")
+            pt_inds = []
+            ex_inds = []
+            # TODO identify .pt and .ex points
+        return x_ax, geoms, f, ax
+
+    @classmethod
+    def make_test_pes(cls, geoms, mod=1, ex=True, half=False, sym=False):
+        test_pes = sheppard.Pes.new_pes()
+        num_points = cls.BuH_torsion_num_points
+        if half:
+            num_points = num_points//2
+        for i in range(num_points):
+            if not i%mod == 0:
+                continue
+            if (cls.torsion_folder/f"torsion_{i}/extracted.pt").exists():
+                test_pes.add_point(cls.torsion_folder/f"torsion_{i}/extracted.pt", symmeterize=sym)
+            elif ex:
+                if (cls.torsion_folder/f"torsion_{i}/extracted.ex").exists():
+                    test_pes.add_point(cls.torsion_folder/f"torsion_{i}/extracted.ex", symmeterize=sym)
+                else:
+                    raise Exception("point data missing from torsion folder")
+        y_shep = [test_pes.eval_point_geom(g) for g in geoms]
+        return y_shep
+
+    @classmethod
     def generate_torsion_plot(cls, path):
         """
-        generates a plot of the torsion PES
+        generates a plot of the torsion PES from a folder of points
         """
         x_ax = 2*np.pi*np.array(range(cls.BuH_torsion_num_points))/cls.BuH_torsion_num_points
         geom_files = [cls.torsion_folder/f"torsion_{i}/geom.xyz" for i in range(cls.BuH_torsion_num_points)]
@@ -137,35 +209,6 @@ class generate_test_files:
 
         ax.legend()
         f.savefig("./test/generated_files/test_fig.png")
-
-    @classmethod
-    def generate_tc_md_BuH(cls):
-        """
-        run Terachm on geometries from the md
-        """
-        md_path = Path("./test/generated_files/md")
-        for p in md_path.glob("run*"):
-            hess_dir = p/"hess_dir"
-            hess_dir.mkdir(exist_ok=True)
-            md_geoms = xyz.combinedGeoms.readFile(p/"scr/coors.xyz")
-            for i in range(0,len(md_geoms.geometries), cls.md_nth_geom):
-                g = md_geoms.geometries[i]
-                if not (hess_dir/str(i)).exists():
-                    with conman.minimal_context(hess_dir/str(i),"./test/tc_files/frequencies/tc.in","./test/tc_files/frequencies/sbatch.sh") as man:
-                        g.write_file("geom.xyz")
-                        man.launch()
-
-    @classmethod
-    def extract_tc_md_BuH(cls):
-        md_path = Path("./test/generated_files/md")
-        for p in md_path.glob("run*"):
-            hess_dir = p/"hess_dir"
-            md_geoms = xyz.combinedGeoms.readFile(p/"scr/coors.xyz")
-            for i in range(0,len(md_geoms.geometries), cls.md_nth_geom):
-                print(i)
-                with conman.enter_dir(hess_dir/str(i)):
-                    if not Path("extracted.pt").exists() or Path("extracted.ex").exists():
-                        extract.point_from_files(Path("tc.out"),Path("geom.xyz"),Path("scr.geom/Hessian.bin"),Path("extracted"))
 
     @classmethod
     def generate_torsion_plot_2(cls):
@@ -248,7 +291,7 @@ class generate_test_files:
         f.savefig(cls.output_folder/"test_fig_2.png")
 
     @classmethod
-    def generate_torsion_plot_3(cls):
+    def generate_torsion_plot_3(cls, sym=True):
         """
         generates torsion scan plots testing inclusion of .pt and .ex files 
         """
@@ -265,7 +308,7 @@ class generate_test_files:
         ax.scatter(x_ax,y_tc,marker="x",color="r", label="tc energies")
 
         # generate a PES along the torsion scan using masked ground truth values
-        print("step4")
+        # print("step4")
         # test_pes = sheppard.Pes.new_pes()
         # for i in range(cls.BuH_torsion_num_points):
         #     if not i%1 == 0:
@@ -281,9 +324,9 @@ class generate_test_files:
             if not i%2 == 0:
                 continue
             if (cls.torsion_folder/f"torsion_{i}/extracted.pt").exists():
-                test_pes.add_point(cls.torsion_folder/f"torsion_{i}/extracted.pt")
+                test_pes.add_point(cls.torsion_folder/f"torsion_{i}/extracted.pt", symmeterize=sym)
         y_shep = [test_pes.eval_point_geom(g) for g in geoms]
-        ax.plot(x_ax, y_shep, color="green", label="half .pt")
+        ax.plot(x_ax, y_shep, color="green", label="1/2 .pt")
 
         print("test6")
         test_pes = sheppard.Pes.new_pes()
@@ -291,9 +334,9 @@ class generate_test_files:
             if not i%4 == 0:
                 continue
             if (cls.torsion_folder/f"torsion_{i}/extracted.pt").exists():
-                test_pes.add_point(cls.torsion_folder/f"torsion_{i}/extracted.pt")
+                test_pes.add_point(cls.torsion_folder/f"torsion_{i}/extracted.pt", symmeterize=sym)
         y_shep = [test_pes.eval_point_geom(g) for g in geoms]
-        ax.plot(x_ax, y_shep, color="blue", label="quarter .pt")
+        ax.plot(x_ax, y_shep, color="blue", linestyle=":", label="1/4 .pt")
 
         print("test7")
         test_pes = sheppard.Pes.new_pes()
@@ -301,13 +344,59 @@ class generate_test_files:
             if not i%4 == 0:
                 continue
             extracted_file = list((cls.torsion_folder/f"torsion_{i}").glob("extracted*"))[0]
-            test_pes.add_point(extracted_file)
+            test_pes.add_point(extracted_file, symmeterize=sym)
         y_shep = [test_pes.eval_point_geom(g) for g in geoms]
-        ax.plot(x_ax, y_shep, color="lime", label="sheppard with quarter of ref data")
+        ax.plot(x_ax, y_shep, color="red", linestyle=":", label="1/4 all")
 
         ax.legend()
-        f.savefig(cls.output_folder/"test_fig_3.png")
+        f.savefig(cls.output_folder/f"test_fig_3_p{global_vars.WEIGHTING_POWER}.png")
 
+    @classmethod
+    def generate_local_torsion_data(cls, sym=False, short=False, neighbors=False):
+        """
+        generates the local torsion plot
+        """
+        x_ax, geoms, f, ax = cls.setup_torsion_plot()
+
+        print("step1")
+        tc_data = [tc.gradient.from_file(cls.torsion_folder/f"torsion_{i}/tc.out") for i in range(cls.BuH_torsion_num_points)]
+        y_tc = [i.energy for i in tc_data]
+        ax.scatter(x_ax,y_tc,marker="x",color="r", label="tc energies")
+
+        num_points = cls.BuH_torsion_num_points
+        if short:
+            num_points = 7
+        for i in range(num_points):
+            print(i)
+            test_pes = sheppard.Pes.new_pes()
+            if neighbors:
+                for j in range(max(0,i-1),min(i+2,cls.BuH_torsion_num_points)):
+                    extracted_file = list((cls.torsion_folder/f"torsion_{j}").glob("extracted*"))[0]
+                    test_pes.add_point(extracted_file, symmeterize=sym)
+            else:
+                extracted_file = list((cls.torsion_folder/f"torsion_{i}").glob("extracted*"))[0]
+                test_pes.add_point(extracted_file, symmeterize=sym)
+            y_shep = [test_pes.eval_point_geom(g) for g in geoms][max(i-2,0):i+3]
+            ax.plot(x_ax[max(i-2,0):i+3], y_shep, linestyle="dotted", label=f"{i}")
+
+        # ax.legend()
+        f.savefig(cls.output_folder/f"loc_scan_sym={sym}_p={global_vars.WEIGHTING_POWER}_n={neighbors}")
+
+    @classmethod
+    def generate_torsion_sym_test(cls):
+        x_ax, geoms, f, ax = cls.setup_torsion_plot()
+        y_shep = cls.make_test_pes(geoms, mod=1, ex=True, half=True, sym=False)
+        ax.plot(x_ax, y_shep, color="orange", label="mod1_exT_symF")
+        y_shep = cls.make_test_pes(geoms, mod=1, ex=False, half=True, sym=False)
+        ax.plot(x_ax, y_shep, color="blue", label="mod1_exF_symF")
+        y_shep = cls.make_test_pes(geoms, mod=1, ex=True, half=True, sym=True)
+        ax.plot(x_ax, y_shep, color="green", label="mod1_exT_symT")
+        y_shep = cls.make_test_pes(geoms, mod=1, ex=False, half=True, sym=True)
+        ax.plot(x_ax, y_shep, color="red", label="mod1_exF_symT")
+
+
+        ax.legend()
+        f.savefig(cls.output_folder/f"sym_test/p{global_vars.WEIGHTING_POWER}.png")
 
     @classmethod
     def debug(cls):
@@ -323,19 +412,18 @@ class generate_test_files:
         perm_group = [[4,5,6],[8,7],[9,10],[11,12,13]]
         pt_edit.permute_self(perm_group)
 
-        test_pes = sheppard.Pes.new_pes()
-        for i in range(cls.BuH_torsion_num_points):
-            if not i%4 == 0:
-                continue
-            extracted_file = list((cls.torsion_folder/f"torsion_{i}").glob("extracted*"))[0]
-            test_pes.add_point(extracted_file)
-        #y_shep = [test_pes.eval_point_geom(g) for g in geoms]
-        embed()
-
         # test_pes = sheppard.Pes.new_pes()
-        # extracted_file = list((cls.torsion_folder/f"torsion_{18}").glob("extracted*"))[0]
-        # test_pes.add_point(extracted_file)
-        # y_shep = [test_pes.eval_point_geom(g) for g in geoms]
+        # for i in range(cls.BuH_torsion_num_points):
+        #     if not i%4 == 0:
+        #         continue
+        #     extracted_file = list((cls.torsion_folder/f"torsion_{i}").glob("extracted*"))[0]
+        #     test_pes.add_point(extracted_file)
+        #y_shep = [test_pes.eval_point_geom(g) for g in geoms]
+
+        test_pes = sheppard.Pes.new_pes()
+        extracted_file = list((cls.torsion_folder/f"torsion_{18}").glob("extracted*"))[0]
+        test_pes.add_point(extracted_file)
+        y_shep = [test_pes.eval_point_geom(g) for g in geoms]
         # embed()
 
     @classmethod
@@ -349,7 +437,29 @@ class generate_test_files:
         # generate_test_files.generate_tc_md_BuH()
         # generate_test_files.extract_tc_md_BuH()
 
+class profiler():
 
+    BuH_torsion_num_points = 36
+    md_nth_geom = 100
+    output_folder = Path("./test/generated_files")
+    torsion_folder = output_folder/"torsion_files"
+
+    @classmethod
+    def single_sym_point(cls):
+        geom_files = [cls.torsion_folder/f"torsion_{i}/geom.xyz" for i in range(cls.BuH_torsion_num_points)]
+        geoms = [xyz.Geometry.from_file(f) for f in geom_files]
+        test_pes = sheppard.Pes.new_pes()
+        extracted_file = list((cls.torsion_folder/f"torsion_{18}").glob("extracted*"))[0]
+        test_pes.add_point(extracted_file, symmeterize=True)
+        y_shep = [test_pes.eval_point_geom(g) for g in geoms]
+        # y_shep = test_pes.eval_point_geom(geoms[10])
+
+    @classmethod
+    def profile(cls, func):
+        profile = cProfile.Profile()
+        profile.runcall(func)
+        ps = pstats.Stats(profile)
+        ps.print_stats()
 
 class sheppard_test(unittest.TestCase):
     def point_test(self, test_path, pes, places=7):
@@ -454,6 +564,49 @@ class pes_point_test(unittest.TestCase):
         new_coords = sheppard.Pes_Point.permute_coords(g.coords, perm_group)
         self.assertTrue(np.all(new_coords[6] == g.coords[4]))
 
+    def test_permute_4(self) -> None:
+        l = []
+        for i in range(global_vars.NUM_ATOMS):
+            for j in range(i+1,global_vars.NUM_ATOMS):
+                l.append((i,j))
+        l = np.array(l)
+        perm_group = [[6,5,4],[8,7],[9,10],[11,12,13]]
+        reorder = sheppard.Pes_Point.permute_inv_dist(l, perm_group)
+
+        # for i, j in zip(l,reorder):
+        #     print(i,j)
+
+    def test_symmetry(self) -> None:
+        return
+        p = Path("./test/generated_files/torsion_files/")
+        g2 = sheppard.Pes_Point.from_file(p/f"torsion_2/extracted.pt")
+        g3 = sheppard.Pes_Point.from_file(p/f"torsion_3/extracted.ex")
+        g31 = sheppard.Pes_Point.from_file(p/f"torsion_31/extracted.ex")
+        perm_group = [[4,6,5],[8,7],[10,9],[13,12,11]]
+        g31.permute_self(perm_group)
+        z2 = g2.inv_dist
+        z3 = g3.inv_dist
+        z31 = g31.inv_dist
+        print("g2 and g3")
+        print(z2-z3)
+        print(sum(abs(z2-z3)))
+        print("g3 and g31")
+        print(z3-z31)
+        print(sum(abs(z3-z31)))
+        perms = [itertools.permutations(i) for i in global_vars.PERMUTATION_GROUPS]
+        combs = itertools.product(*perms)
+        mini = 10000
+        for i in combs:
+            g31 = sheppard.Pes_Point.from_file(p/f"torsion_31/extracted.ex")
+            g31.permute_self(i)
+            if sum(abs(g31.inv_dist - g3.inv_dist)) < mini:
+                z31 = g31.inv_dist
+                mini = sum(abs(g31.inv_dist - g3.inv_dist))
+        print(mini)
+
+        g2.permute_self(perm_group)
+        print(sum(abs(g2.inv_dist - z2)))
+
 
 # class grads_test(unittest.TestCase):
 #     def setUp(self) -> None:
@@ -516,77 +669,109 @@ class pes_point_test(unittest.TestCase):
 #         ext_z = self.exact_grads.calc_inv_hessian(one_d_geom)
 #         self.assertTrue(np.allclose(sym_z, ext_z))
 
-class understanding_p():
-    output_folder = Path("./test/generated_files")
-    torsion_folder = output_folder/"torsion_files"
-    BuH_torsion_num_points = 36
-    empty_pes = sheppard.Pes()
-
-    pt_orig = sheppard.Pes_Point.from_file("./test/generated_files/BuH.pt")
-    pt_edit = sheppard.Pes_Point.from_file("./test/generated_files/BuH.pt")
-    unsym_pes = sheppard.Pes.new_pes()
-    extracted_file = list((torsion_folder/f"torsion_{12}").glob("extracted*"))[0]
-    unsym_pes.add_point(extracted_file, symmeterize=False)
-    sym_pes = sheppard.Pes.new_pes()
-    extracted_file = list((torsion_folder/f"torsion_{12}").glob("extracted*"))[0]
-    sym_pes.add_point(extracted_file, symmeterize=True)
-
-    geom_files = []
-    for i in range(BuH_torsion_num_points):
-        geom_files.append(torsion_folder/f"torsion_{i}/geom.xyz")
-    geoms = [xyz.Geometry.from_file(f) for f in geom_files]
-
-    @classmethod
-    def print_weights(cls, p):
-        for i in range(len(cls.geoms)):
-            print(i)
-            cls.sym_pes.get_weight_statistics(cls.geoms[i].coords.reshape(-1), p=p)
-
-    @classmethod
-    def print_norms(cls, p):
-        test_pt = cls.unsym_pes.point_list[0]
-        inv_dist_test = test_pt.inv_dist
-        for i in range(len(cls.geoms)):
-            print(i)
-            inv_dist_i = sheppard.Pes_Point.calc_inv_dist(cls.geoms[i].coords.reshape(-1))
-            print(np.linalg.norm(inv_dist_test - inv_dist_i,p))
-
-    @classmethod
-    def print_inv_dist(cls):
-        # test_pt = cls.unsym_pes.point_list[0]
-        for i in range(len(cls.geoms)):
-            print(i)
-            print(sheppard.Pes_Point.calc_inv_dist(cls.geoms[i].coords.reshape(-1)))
-
-    @classmethod
-    def print_inv_dist_diff(cls):
-        test_pt = cls.unsym_pes.point_list[0]
-        inv_dist_test = test_pt.inv_dist
-        for i in range(len(cls.geoms)):
-            print(i)
-            inv_dist_i = sheppard.Pes_Point.calc_inv_dist(cls.geoms[i].coords.reshape(-1))
-            print(sum(abs(inv_dist_test - inv_dist_i)))
-
-
-
 
 class timings:
     def time_inv_jacobian(self):
         num_atoms_BuH = 14
         self.exact_grads = grads.Exact_Grad(num_atoms_BuH)
+        self.sym_grads = grads.Sympy_Grad(num_atoms_BuH)
+
 
         test_path = Path("./test/test_files/BuH.test.small_disp.xyz")
         test_geom = xyz.Geometry.from_file(test_path)
         one_d_geom = test_geom.coords.reshape(-1)
-        v1_start = time.time()
+        t1 = time.time()
         ext_v1 = self.exact_grads.calc_inv_jacobian(one_d_geom)
-        mid = time.time()
+        t2 = time.time()
         ext_v2 = self.exact_grads.calc_inv_jacobian_alt(one_d_geom)
-        v2_start = time.time()
+        t3 = time.time()
+        sym_v1 = self.sym_grads.calc_inv_jacobian(one_d_geom)
+        t4 = time.time()
+        sym_v1 = self.sym_grads.calc_inv_jacobian(one_d_geom)
+        t5 = time.time()
+        print(f"v1 time: {t2-t1}")
+        print(f"v2 time: {t3-t2}")
+        print(f"sym_1 time: {t4-t3}")
+        print(f"sym_2 time: {t5-t4}")
         assert np.allclose(ext_v1, ext_v2)
-        print(f"v1 time: {v1_start-mid}")
-        print(f"v2 time: {mid-v2_start}")
+        assert np.allclose(sym_v1, ext_v1)
 
+class printouts:
+    @classmethod
+    def quantify_distances(cls, p_file_1, p_file_2):
+        pt1 = sheppard.Pes_Point.from_file(p_file_1)
+        pt2 = sheppard.Pes_Point.from_file(p_file_2)
+        perms = [itertools.permutations(i) for i in global_vars.PERMUTATION_GROUPS]
+        combs = itertools.product(*perms)
+        combs = list(combs)
+
+        max_norm_in_1 = -np.inf
+        max_perm_in_1 = global_vars.PERMUTATION_GROUPS
+        for i in combs:
+            perm_point = sheppard.Pes_Point.from_file(p_file_1)
+            perm_point.permute_self(i)
+            if (dist := np.linalg.norm(pt1.inv_dist - perm_point.inv_dist)) > max_norm_in_1:
+                max_norm_in_1 = dist
+                max_perm_in_1 = i
+        max_norm_in_2 = -np.inf
+        max_perm_in_2 =  global_vars.PERMUTATION_GROUPS
+        # for i in combs:
+        #     perm_point = sheppard.Pes_Point.from_file(p_file_2)
+        #     perm_point.permute_self(i)
+        #     if (dist := np.linalg.norm(pt1.inv_dist - perm_point.inv_dist)) > max_norm_in_2:
+        #         max_norm_in_2 = dist
+        #         max_perm_in_2 = i
+        max_norm_between = -np.inf
+        min_norm_between = np.inf
+        max_perm_between = None
+        min_perm_between = None
+        for i in combs:
+            perm_point = sheppard.Pes_Point.from_file(p_file_2)
+            perm_point.permute_self(i)
+            if (dist := np.linalg.norm(pt1.inv_dist - perm_point.inv_dist)) > max_norm_between:
+                max_norm_between = dist
+                max_perm_between = i
+            if (dist := np.linalg.norm(pt1.inv_dist - perm_point.inv_dist)) < min_norm_between:
+                min_norm_between = dist
+                min_perm_between = i
+
+        # print("within group")
+        # print(f"maximum norm: {max_norm_in_1}")
+        # print(f"associated perm:{max_perm_in_1}")
+        # print("between groups")
+        # print(f"maximum norm: {max_norm_between}")
+        # print(f"associated perm:{max_perm_between}")
+        print(f"minimum norm: {min_norm_between}")
+        print(f"associated perm:{min_perm_between}")
+
+    @classmethod
+    def quantify_torsion_distances(cls, ind1, ind2):
+        f1 = list(Path(f"./test/generated_files/torsion_files/torsion_{ind1}").glob("extracted*"))[0]
+        f2 = list(Path(f"./test/generated_files/torsion_files/torsion_{ind2}").glob("extracted*"))[0]
+        cls.quantify_distances(f1, f2)
+
+    @classmethod
+    def quantify_assymetry(cls):
+        # ref_geom = xyz.Geometry.from_file("./test/test_files/BuH_anti.xyz")
+        # print(absref_geom.dist(0,5) - ref_geom.dist(0,6))
+        pt = sheppard.Pes_Point.from_file(Path("./test/generated_files/torsion_files/torsion_0/extracted.pt"))
+        pt2 = sheppard.Pes_Point.from_file(Path("./test/generated_files/torsion_files/torsion_35/extracted.pt"))
+        # perm_group = [[4,6,5],[8,7],[10,9],[12,11,13]]
+        # pt2.permute_self(perm_group)
+        # print("sum abs diff of min geom and its mirror")
+        # print(sum(abs(pt2.inv_dist - pt.inv_dist)))
+
+        perms = [itertools.permutations(i) for i in global_vars.PERMUTATION_GROUPS]
+        combs = itertools.product(*perms)
+        z = None
+        mini = 10000
+        for i in combs:
+            pt2 = sheppard.Pes_Point.from_file("./test/generated_files/torsion_files/"+f"torsion_35/extracted.pt")
+            pt2.permute_self(i)
+            if sum(abs(pt2.inv_dist - pt2.inv_dist)) < mini:
+                z = pt2.inv_dist
+                mini = sum(abs(pt2.inv_dist - pt.inv_dist))
+        print(mini)
 
 def parse():
     args = argparse.ArgumentParser(description="run test cases for sheppard PES")
@@ -601,6 +786,7 @@ def parse():
         type=Path,
         help="makes test plot of PES along BuH torsion scan using the pt files in the given path",
     )
+    args.add_argument("-p", "--profile", action="store_true", help="run some profiling on a PES")
     args.add_argument("-t", "--timings", action="store_true", help="run timing tests")
     args.add_argument("-u", "--unittest", action="store_true", help="perform unittests")
     args.add_argument("-z", action="store_true", help="Brandon's helper arg")
@@ -633,22 +819,24 @@ def main():
         # generate_test_files.generate_torsion_plot_2()
         generate_test_files.generate_torsion_plot_3()
 
-        # understanding_p.print_weights(1)
-        # understanding_p.print_weights(250)
-        # understanding_p.print_weights(np.inf)
-        # understanding_p.print_inv_dist_diff()
-        # print("1")
-        # understanding_p.print_norms(1)
-        # print("250")
-        # understanding_p.print_norms(250)
-        # print("inf")
-        # understanding_p.print_norms(np.inf)
-        # print("1")
-        # understanding_p.print_all(1)
-        # print("250")
-        # understanding_p.print_all(250)
-        # print("inf")
-        # understanding_p.print_all(np.inf)
+        # generate_test_files.generate_local_torsion_data()
+        # generate_test_files.generate_local_torsion_data(neighbors=True)
+        # generate_test_files.generate_local_torsion_data(True, True)
+        # generate_test_files.generate_local_torsion_data(True, True, True)
+
+        # generate_test_files.generate_torsion_sym_test()
+
+        # printouts.quantify_assymetry()
+        # for i in range(35):
+        #     print(i)
+        #     printouts.quantify_torsion_distances(31, i)
+        # t = pes_point_test()
+        # t.test_permute_4()
+
+    if args.profile:
+        profiler.profile(profiler.single_sym_point)
+
+
 
 
 if __name__ == "__main__":

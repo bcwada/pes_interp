@@ -186,7 +186,7 @@ class Exact_Grad:
         prod1 = -(1/2)*np.power(self.distance(one_d_coords, atom1, atom2),-3)
         prod2 = self.sum_squares_first_deriv(one_d_coords, atom1, atom2, deriv_coord)
         return prod1*prod2
-    
+
     def first_derivative_alt(self, one_d_coords: np.array, atom1: int, atom2: int, deriv_coord: int) -> float:
         """
         calculates the first derivative of the distance between atom1 and atom2
@@ -251,7 +251,7 @@ class Exact_Grad:
         else:
             ss_2_deriv = -2
         term2 = term2*ss_2_deriv
-        
+
         return term1 + term2
 
     @property
@@ -273,7 +273,7 @@ class Exact_Grad:
                     z_ind += 1
             return 1/z
         return inv_dist
-    
+
     @property
     def calc_inv_jacobian(self):
         """
