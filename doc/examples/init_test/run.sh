@@ -6,4 +6,4 @@ mkdir output
 # initial conditions dir
 # # timesteps
 # output TC calculations
-python /Projects/pes_interp/pes_interp/script.py pes_files/ tc_files/ init_conds/ 1 1 output
+python ../../PesInterp/script.py pes_files/ tc_files/ init_conds/ 1 1 output
