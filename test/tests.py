@@ -13,14 +13,14 @@ import time
 import matplotlib
 import matplotlib.pyplot as plt
 
-import sheppard_pes as sheppard
-import grads
-import lib.xyz as xyz
-import lib.tc_reader as tc
-import point_processor
-import lib.context_manager as conman
-import tools.point_extractor as extract
-import global_vars
+import PesInterp.sheppard_pes as sheppard
+import PesInterp.grads as grads
+import PesInterp.lib.xyz as xyz
+import PesInterp.lib.tc_reader as tc
+import PesInterp.point_processor as point_processor
+import PesInterp.lib.context_manager as conman
+import PesInterp.tools.point_extractor as extract
+import PesInterp.global_vars as global_vars
 
 
 class common_test_funcs:
@@ -124,6 +124,9 @@ class generate_test_files:
 
     @classmethod
     def setup_torsion_plot(cls, plot_ref=True):
+        """
+        builds a plot and plots the terachem ground truth data
+        """
         x_ax = 2*np.pi*np.array(range(cls.BuH_torsion_num_points))/cls.BuH_torsion_num_points
         geom_files = [cls.torsion_folder/f"torsion_{i}/geom.xyz" for i in range(cls.BuH_torsion_num_points)]
         geoms = [xyz.Geometry.from_file(f) for f in geom_files]
@@ -427,15 +430,28 @@ class generate_test_files:
         # embed()
 
     @classmethod
-    def generate_all(cls):
+    def generate_all_torsion(cls):
+        # generate torsion data
         generate_test_files.generate_folders()
         generate_test_files.generate_BuH_torsion()
         generate_test_files.generate_BuH_pseudo()
         generate_test_files.generate_tc_BuH_torsion()
         generate_test_files.extract_tc_BuH_torsion()
-        # run md
-        # generate_test_files.generate_tc_md_BuH()
-        # generate_test_files.extract_tc_md_BuH()
+    
+    @classmethod
+    def generate_all_md(cls):
+        generate_test_files.generate_tc_md_BuH()
+        generate_test_files.extract_tc_md_BuH()
+
+    @classmethod
+    def generate_all_plots(cls):
+        #TODO
+        pass
+
+    @classmethod
+    def generate_all(cls):
+        cls.generate_all_torsion()
+        cls.generate_all_md()
 
 class profiler():
 
