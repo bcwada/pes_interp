@@ -4,9 +4,9 @@ from dataclasses import dataclass
 from pathlib import Path
 import os
 
-import lib.xyz as xyz
-import global_vars
-from grads import Exact_Grad
+import PesInterp.lib.xyz as xyz
+import PesInterp.global_vars as global_vars
+from .grads import Exact_Grad
 
 @dataclass
 class point_generator:

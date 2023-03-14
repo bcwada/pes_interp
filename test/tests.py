@@ -22,6 +22,8 @@ import PesInterp.lib.context_manager as conman
 import PesInterp.tools.point_extractor as extract
 import PesInterp.global_vars as global_vars
 
+#region
+#endregion
 
 class common_test_funcs:
     @classmethod
@@ -40,6 +42,8 @@ class generate_test_files:
     md_nth_geom = 100
     output_folder = Path("./test/generated_files")
     torsion_folder = output_folder/"torsion_files"
+
+    #region simple generators
 
     @classmethod
     def generate_folders(cls):
@@ -146,6 +150,9 @@ class generate_test_files:
 
     @classmethod
     def make_test_pes(cls, geoms, mod=1, ex=True, half=False, sym=False):
+        """
+        Evaluates points on a potential energy surface from part of 1D torsion scan data (generated with above functions)
+        """
         test_pes = sheppard.Pes.new_pes()
         num_points = cls.BuH_torsion_num_points
         if half:
@@ -163,8 +170,10 @@ class generate_test_files:
         y_shep = [test_pes.eval_point_geom(g) for g in geoms]
         return y_shep
 
+    #endregion simple generators
+    
     @classmethod
-    def generate_torsion_plot(cls, path):
+    def generate_torsion_plot(cls, path, masks=False):
         """
         generates a plot of the torsion PES from a folder of points
         """
@@ -175,40 +184,42 @@ class generate_test_files:
         ax.set_xlabel("torsion angle (radians)")
         ax.set_ylabel("energy")
 
-        print("step1")
+        print("step1: Plotting ground truth")
         tc_data = [tc.gradient.from_file(cls.torsion_folder/f"torsion_{i}/tc.out") for i in range(cls.BuH_torsion_num_points)]
         y_tc = [i.energy for i in tc_data]
         ax.scatter(x_ax,y_tc,marker="x",color="r", label="tc energies")
 
-        print("step2")
+        print("step2: Plotting only .pt files")
         test_pes = sheppard.Pes.pes_from_folder(path)
         y_shep = [test_pes.eval_point_geom(g) for g in geoms]
         ax.plot(x_ax, y_shep, color="b", label="sheppard with only .pt files")
 
-        print("step3")
+        print("step3: Plotting with both .pt and .ex files")
         test_pes = sheppard.Pes.pes_from_folder(path, include_ex=True)
         y_shep = [test_pes.eval_point_geom(g) for g in geoms]
         ax.plot(x_ax, y_shep, color="g", label="sheppard with .pt and .ex files")
 
-        # generate a PES along the torsion scan using masked ground truth values
-        print("step4")
-        test_pes = sheppard.Pes.new_pes()
-        for i in range(cls.BuH_torsion_num_points):
-            if not i%2 == 0:
-                continue
-            extracted_file = list((cls.torsion_folder/f"torsion_{i}").glob("extracted*"))[0]
-            test_pes.add_point(extracted_file)
-        y_shep = [test_pes.eval_point_geom(g) for g in geoms]
-        ax.plot(x_ax, y_shep, color="cyan", label="sheppard with half of ref data")
+        if masks:
+            # generate a PES along the torsion scan using masked ground truth values
+            print("step4: Plotting with masked ground truth (1/2 points)")
+            test_pes = sheppard.Pes.new_pes()
+            for i in range(cls.BuH_torsion_num_points):
+                if not i%2 == 0:
+                    continue
+                extracted_file = list((cls.torsion_folder/f"torsion_{i}").glob("extracted*"))[0]
+                test_pes.add_point(extracted_file)
+            y_shep = [test_pes.eval_point_geom(g) for g in geoms]
+            ax.plot(x_ax, y_shep, color="cyan", label="sheppard with half of ref data")
 
-        test_pes = sheppard.Pes.new_pes()
-        for i in range(cls.BuH_torsion_num_points):
-            if not i%4 == 0:
-                continue
-            extracted_file = list((cls.torsion_folder/f"torsion_{i}").glob("extracted*"))[0]
-            test_pes.add_point(extracted_file)
-        y_shep = [test_pes.eval_point_geom(g) for g in geoms]
-        ax.plot(x_ax, y_shep, color="lime", label="sheppard with quarter of ref data")
+            print("step5: Plotting with masked ground truth (1/4 points)")
+            test_pes = sheppard.Pes.new_pes()
+            for i in range(cls.BuH_torsion_num_points):
+                if not i%4 == 0:
+                    continue
+                extracted_file = list((cls.torsion_folder/f"torsion_{i}").glob("extracted*"))[0]
+                test_pes.add_point(extracted_file)
+            y_shep = [test_pes.eval_point_geom(g) for g in geoms]
+            ax.plot(x_ax, y_shep, color="lime", label="sheppard with quarter of ref data")
 
         ax.legend()
         f.savefig("./test/generated_files/test_fig.png")
@@ -358,6 +369,9 @@ class generate_test_files:
     def generate_local_torsion_data(cls, sym=False, short=False, neighbors=False):
         """
         generates the local torsion plot
+
+        creates a plot that verifies that neighboring points of a single point along the generated torsion scan are 
+        qualitatively in good condition
         """
         x_ax, geoms, f, ax = cls.setup_torsion_plot()
 
@@ -387,6 +401,9 @@ class generate_test_files:
 
     @classmethod
     def generate_torsion_sym_test(cls):
+        """
+        Generates another testing PES plot
+        """
         x_ax, geoms, f, ax = cls.setup_torsion_plot()
         y_shep = cls.make_test_pes(geoms, mod=1, ex=True, half=True, sym=False)
         ax.plot(x_ax, y_shep, color="orange", label="mod1_exT_symF")
@@ -397,12 +414,14 @@ class generate_test_files:
         y_shep = cls.make_test_pes(geoms, mod=1, ex=False, half=True, sym=True)
         ax.plot(x_ax, y_shep, color="red", label="mod1_exF_symT")
 
-
         ax.legend()
         f.savefig(cls.output_folder/f"sym_test/p{global_vars.WEIGHTING_POWER}.png")
 
     @classmethod
     def debug(cls):
+        """
+        This is my debugging function and no one else's. Go write your own or delete this
+        """
         def print_all(geom_list,pes):
             for i in range(len(geom_list)):
                 print(i)
@@ -452,6 +471,7 @@ class generate_test_files:
     def generate_all(cls):
         cls.generate_all_torsion()
         cls.generate_all_md()
+        cls.generate_all_plots()
 
 class profiler():
 

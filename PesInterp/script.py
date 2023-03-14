@@ -3,9 +3,9 @@ import argparse
 import numpy as np
 from pathlib import Path
 
-from sheppard_pes import Pes
-from dynamics import trajectory
-import lib.xyz as xyz
+from .sheppard_pes import Pes
+from .dynamics import trajectory
+import PesInterp.lib.xyz as xyz
 
 def parse():
     parser = argparse.ArgumentParser(

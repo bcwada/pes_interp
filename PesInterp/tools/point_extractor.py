@@ -6,9 +6,9 @@ from sys import argv
 from pathlib import Path
 import textwrap
 
-import lib.xyz as xyz
-import lib.tc_reader as tcReader
-from point_processor import point_generator
+import PesInterp.lib.xyz as xyz
+import PesInterp.lib.tc_reader as tcReader
+from PesInterp.point_processor import point_generator
 
 def points_from_dir(tc_dir,output_dir=None):
     """Convert TeraChem output files in tc_dir to internal format.

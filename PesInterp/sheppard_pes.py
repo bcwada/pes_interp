@@ -4,14 +4,12 @@ import numpy as np
 from dataclasses import dataclass
 import itertools
 
-import global_vars
-import lib.xyz as xyz
-from grads import Sympy_Grad
-from grads import Exact_Grad
-from grads import numerical_grad
-from point_processor import point_generator
-
-import time
+import PesInterp.global_vars as global_vars
+import PesInterp.lib.xyz as xyz
+from .grads import Sympy_Grad
+from .grads import Exact_Grad
+from .grads import numerical_grad
+from .point_processor import point_generator
 
 # TODO: properly symmeterize the transformation matrix
 import copy
