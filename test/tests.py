@@ -43,8 +43,6 @@ class generate_test_files:
     output_folder = Path("./test/generated_files")
     torsion_folder = output_folder/"torsion_files"
 
-    #region simple generators
-
     @classmethod
     def generate_folders(cls):
         cls.output_folder.mkdir(parents=True, exist_ok=True)
@@ -86,7 +84,7 @@ class generate_test_files:
             with conman.minimal_context(Path(cls.torsion_folder/f"torsion_{i}"),"./test/tc_files/frequencies/tc.in","./test/tc_files/frequencies/sbatch.sh") as man:
                 g.write_file("geom.xyz")
                 man.launch()
-                man.wait_for_job()
+                #man.wait_for_job()
 
     @classmethod
     def extract_tc_BuH_torsion(cls):
@@ -169,8 +167,6 @@ class generate_test_files:
                     raise Exception("point data missing from torsion folder")
         y_shep = [test_pes.eval_point_geom(g) for g in geoms]
         return y_shep
-
-    #endregion simple generators
     
     @classmethod
     def generate_torsion_plot(cls, path, masks=False):
@@ -451,19 +447,21 @@ class generate_test_files:
     @classmethod
     def generate_all_torsion(cls):
         # generate torsion data
+        print("creating directories")
         generate_test_files.generate_folders()
+        print("generating BuH geometries")
         generate_test_files.generate_BuH_torsion()
+        print("generating pseudo-potential files")
         generate_test_files.generate_BuH_pseudo()
+        print("submitting terachem jobs")
         generate_test_files.generate_tc_BuH_torsion()
-        generate_test_files.extract_tc_BuH_torsion()
     
     @classmethod
     def generate_all_md(cls):
         generate_test_files.generate_tc_md_BuH()
-        generate_test_files.extract_tc_md_BuH()
 
     @classmethod
-    def generate_all_plots(cls):
+    def make_plots(cls):
         #TODO
         pass
 
@@ -471,7 +469,6 @@ class generate_test_files:
     def generate_all(cls):
         cls.generate_all_torsion()
         cls.generate_all_md()
-        cls.generate_all_plots()
 
 class profiler():
 
@@ -818,6 +815,31 @@ def parse():
         help="generate the files necessary for testing",
     )
     args.add_argument(
+        "--generate_torsion",
+        action="store_true",
+        help="run terachem and generate point files along the BuH torsion scan"
+    )
+    args.add_argument(
+        "--generate_md",
+        action="store_true",
+        help="run terachem and generate point files from BuH molecular dynamics"
+    )
+    args.add_argument(
+        "--extract_torsion",
+        action="store_true",
+        help="extract data from terachem jobs for test torsion data",
+    )
+    args.add_argument(
+        "--extract_md",
+        action="store_true",
+        help="extract data from terachem jobs for test md data",
+    )
+    args.add_argument(
+        "--make_plots",
+        action="store_true",
+        help="from generated files generate relevant plots"
+    )
+    args.add_argument(
         "--make_plot",
         type=Path,
         help="makes test plot of PES along BuH torsion scan using the pt files in the given path",
@@ -825,7 +847,7 @@ def parse():
     args.add_argument("-p", "--profile", action="store_true", help="run some profiling on a PES")
     args.add_argument("-t", "--timings", action="store_true", help="run timing tests")
     args.add_argument("-u", "--unittest", action="store_true", help="perform unittests")
-    args.add_argument("-z", action="store_true", help="Brandon's helper arg")
+    args.add_argument("-z", action="store_true", help="developer debug argument")
     args = args.parse_args()
     return args
 
@@ -834,6 +856,16 @@ def main():
     args = parse()
     if args.generate:
         generate_test_files.generate_all()
+    if args.generate_torsion:
+        generate_test_files.generate_all_torsion()
+    if args.generate_md:
+        generate_test_files.generate_all_md()
+    if args.extract_torsion:
+        generate_test_files.extract_tc_BuH_torsion()
+    if args.extract_md:
+        generate_test_files.extract_tc_md_BuH()
+    if args.make_plots:
+        generate_test_files.make_plots()
     if args.timings:
         timing = timings()
         timing.time_inv_jacobian()
@@ -848,26 +880,9 @@ def main():
     if args.make_plot is not None:
         generate_test_files.generate_torsion_plot(args.make_plot)
     if args.z:
-        #generate_test_files.generate_tc_md_BuH()
-        #generate_test_files.extract_tc_md_BuH()
-
         # generate_test_files.debug()
         # generate_test_files.generate_torsion_plot_2()
         generate_test_files.generate_torsion_plot_3()
-
-        # generate_test_files.generate_local_torsion_data()
-        # generate_test_files.generate_local_torsion_data(neighbors=True)
-        # generate_test_files.generate_local_torsion_data(True, True)
-        # generate_test_files.generate_local_torsion_data(True, True, True)
-
-        # generate_test_files.generate_torsion_sym_test()
-
-        # printouts.quantify_assymetry()
-        # for i in range(35):
-        #     print(i)
-        #     printouts.quantify_torsion_distances(31, i)
-        # t = pes_point_test()
-        # t.test_permute_4()
 
     if args.profile:
         profiler.profile(profiler.single_sym_point)

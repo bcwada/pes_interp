@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from time import sleep
 
-# Maximum time ot wait for TC (seconds)
+# Maximum time to wait for TC (seconds)
 CONMAN_MAX_WAIT_TIME=60*10
 
 CONMAN_WAIT_TIME_INTERVAL=5 # (in seconds)
